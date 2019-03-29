@@ -1,0 +1,81 @@
+DROP DATABASE IF EXISTS onlineshop;
+CREATE DATABASE onlineshop;
+USE onlineshop;
+
+CREATE TABLE users (
+id INT NOT NULL AUTO_INCREMENT,
+firstName VARCHAR(250) NOT NULL,
+lastName VARCHAR(250) NOT NULL,
+patronymic VARCHAR(250) DEFAULT NULL,
+userType VARCHAR(250) NOT NULL,
+login VARCHAR(250) NOT NULL,
+password VARCHAR(250) NOT NULL,
+PRIMARY KEY (id),
+UNIQUE KEY login (login)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE admins (
+id INT NOT NULL,
+position VARCHAR(250) NOT NULL,
+foreign key (id) references users(id) ON DELETE CASCADE,
+PRIMARY KEY (id),
+UNIQUE KEY id (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE clients (
+id INT NOT NULL,
+email VARCHAR(250) NOT NULL,
+address VARCHAR(250) NOT NULL,
+phone VARCHAR(250) NOT NULL,
+deposit VARCHAR(250) DEFAULT 0,
+foreign key (id) references users(id) ON DELETE CASCADE,
+PRIMARY KEY (id),
+UNIQUE KEY id (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE sessions (
+id INT NOT NULL,
+cookie VARCHAR(250) DEFAULT NULL,
+foreign key (id) references users(id) ON DELETE CASCADE,
+PRIMARY KEY (id),
+UNIQUE KEY cookie (cookie)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE categories (
+id INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(250) NOT NULL,
+parentId INT DEFAULT NULL,
+parentName VARCHAR(250) DEFAULT NULL,
+PRIMARY KEY (id),
+UNIQUE KEY name (name)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE products (
+id INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(250) NOT NULL,
+price INT NOT NULL,
+count INT DEFAULT 0,
+PRIMARY KEY (id),
+UNIQUE KEY name (name)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE onlineshop.products_categories (
+productId INT NOT NULL ,
+categoryId INT NOT NULL,
+foreign key (productId) references products(id) ON DELETE CASCADE,
+foreign key (categoryId) references categories(id) ON DELETE CASCADE,
+UNIQUE KEY productId_categoryId (productId, categoryId)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+CREATE TABLE purchases (
+id INT NOT NULL AUTO_INCREMENT,
+userId INT NOT NULL,
+productId INT NOT NULL,
+name VARCHAR(250) NOT NULL,
+price INT NOT NULL,
+count INT NOT NULL,
+PRIMARY KEY (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+
+
