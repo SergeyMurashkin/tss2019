@@ -1,4 +1,4 @@
-package net.thumbtack.onlineshop.models;
+package net.thumbtack.onlineshop.model;
 
 public class Admin extends User {
 
@@ -7,7 +7,7 @@ public class Admin extends User {
     public Admin() {
     }
 
-    public Admin(Integer id,
+    public Admin(int id,
                  String firstName,
                  String lastName,
                  String patronymic,

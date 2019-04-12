@@ -1,7 +1,7 @@
 package net.thumbtack.onlineshop.daoImpl;
 
 import net.thumbtack.onlineshop.dao.UserDao;
-import net.thumbtack.onlineshop.models.*;
+import net.thumbtack.onlineshop.model.*;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +43,8 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
             try {
                 getUserMapper(sqlSession).insertUser(client);
                 getUserMapper(sqlSession).insertClient(client);
+                client.getDeposit().setId(client.getId());
+                getUserMapper(sqlSession).addDeposit(client);
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't insert Admin. {}", ex);
                 sqlSession.rollback();
@@ -60,22 +62,32 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
     }
 
     @Override
-    public User loginUser(String login, String password, String cookie) {
+    public User loginUser(String login, String password, String cookie) throws OnlineShopException {
         LOGGER.debug("DAO login User with login {}", login);
         User user;
         try (SqlSession sqlSession = getSession()) {
             try {
-                user = getUserMapper(sqlSession).getUser(login, password);
-
-                if (user.getUserType().equals(UserType.ADMIN.name())) {
-                    user = getUserMapper(sqlSession).getAdmin(user);
+                String checkLogin = getUserMapper(sqlSession).isLoginExists(login);
+                if (checkLogin == null || !checkLogin.equalsIgnoreCase(login)) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_LOGIN,
+                            "Login",
+                            OnlineShopErrorCode.USER_WRONG_LOGIN.getErrorText());
+                } else {
+                    user = getUserMapper(sqlSession).getUser(login, password);
+                    if (user == null) {
+                        throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
+                                "Password",
+                                OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
+                    } else {
+                        if (user.getUserType().equals(UserType.ADMIN.name())) {
+                            user = getUserMapper(sqlSession).getAdmin(user);
+                        }
+                        if (user.getUserType().equals(UserType.CLIENT.name())) {
+                            user = getUserMapper(sqlSession).getClient(user);
+                        }
+                    }
+                    getUserMapper(sqlSession).loginUser(user, cookie);
                 }
-
-                if (user.getUserType().equals(UserType.CLIENT.name())) {
-                    user = getUserMapper(sqlSession).getClient(user);
-                }
-
-                getUserMapper(sqlSession).loginUser(user, cookie);
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't login User. {}", ex);
                 sqlSession.rollback();
@@ -85,7 +97,6 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
         }
         return user;
     }
-
 
     @Override
     public void logoutUser(String cookieValue) {
@@ -103,24 +114,27 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
     }
 
     @Override
-    public User getActualUser(String cookieValue) {
+    public User getActualUser(String cookieValue) throws OnlineShopException {
         LOGGER.debug("DAO get User with cookie {}", cookieValue);
         User user;
         try (SqlSession sqlSession = getSession()) {
             try {
-
                 user = getUserMapper(sqlSession).getActualUser(cookieValue);
-
-                if (user.getUserType().equals(UserType.ADMIN.name())) {
-                    user = getUserMapper(sqlSession).getAdmin(user);
-                }
-
-                if (user.getUserType().equals(UserType.CLIENT.name())) {
-                    user = getUserMapper(sqlSession).getClient(user);
+                if (user == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                            null,
+                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+                } else {
+                    if (user.getUserType().equals(UserType.ADMIN.name())) {
+                        user = getUserMapper(sqlSession).getAdmin(user);
+                    }
+                    if (user.getUserType().equals(UserType.CLIENT.name())) {
+                        user = getUserMapper(sqlSession).getClient(user);
+                    }
                 }
 
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't login User. {}", ex);
+                LOGGER.info("Can't get User. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -130,40 +144,58 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
     }
 
     @Override
-    public List<Client> getAllClients(String cookieValue) {
+    public List<Client> getAllClients(String cookieValue) throws OnlineShopException {
         LOGGER.debug("DAO get all Users by adminCookie {}", cookieValue);
         List<Client> clients = new ArrayList<>();
-
         try (SqlSession sqlSession = getSession()) {
             try {
                 User user = getUserMapper(sqlSession).getActualUser(cookieValue);
-
-                if (user.getUserType().equals(UserType.ADMIN.name())) {
-                    clients = getUserMapper(sqlSession).getAllClients();
+                if (user == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                            null,
+                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+                } else {
+                    if (user.getUserType().equals(UserType.ADMIN.name())) {
+                        clients = getUserMapper(sqlSession).getAllClients();
+                    }
                 }
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't get all Users. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
-
             sqlSession.commit();
         }
         return clients;
     }
 
     @Override
-    public Admin adminProfileEditing(Admin newAdmin, String cookieValue, String oldPassword) {
+    public Admin adminProfileEditing(Admin newAdmin, String cookieValue, String oldPassword) throws OnlineShopException {
         LOGGER.debug("DAO edit Admin profile with cookie {}", cookieValue);
         User user;
         Admin admin;
         try (SqlSession sqlSession = getSession()) {
             try {
+                User userBefore = getUserMapper(sqlSession).getActualUser(cookieValue);
+                if (userBefore == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                            null,
+                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+                }
+                if (!userBefore.getPassword().equals(oldPassword)) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
+                            "Old password",
+                            OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
+                }
+                if (!userBefore.getUserType().equals(UserType.CLIENT.name())) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_ADMIN,
+                            null,
+                            OnlineShopErrorCode.USER_NOT_ADMIN.getErrorText());
+                }
                 getUserMapper(sqlSession).userProfileEditing(newAdmin, cookieValue, oldPassword);
                 getUserMapper(sqlSession).adminProfileEditing(newAdmin, cookieValue);
                 user = getUserMapper(sqlSession).getActualUser(cookieValue);
                 admin = getUserMapper(sqlSession).getAdmin(user);
-
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't edit Admin profile. {}", ex);
                 sqlSession.rollback();
@@ -175,12 +207,28 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
     }
 
     @Override
-    public Client clientProfileEditing(Client newClient, String cookieValue, String oldPassword) {
+    public Client clientProfileEditing(Client newClient, String cookieValue, String oldPassword) throws OnlineShopException {
         LOGGER.debug("DAO edit Admin profile with cookie {}", cookieValue);
         User user;
         Client client;
         try (SqlSession sqlSession = getSession()) {
             try {
+                User userBefore = getUserMapper(sqlSession).getActualUser(cookieValue);
+                if (userBefore == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                            null,
+                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+                }
+                if (!userBefore.getPassword().equals(oldPassword)) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
+                            "Old password",
+                            OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
+                }
+                if (!userBefore.getUserType().equals(UserType.CLIENT.name())) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
+                            null,
+                            OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
+                }
                 getUserMapper(sqlSession).userProfileEditing(newClient, cookieValue, oldPassword);
                 getUserMapper(sqlSession).clientProfileEditing(newClient, cookieValue);
                 user = getUserMapper(sqlSession).getActualUser(cookieValue);
@@ -237,8 +285,6 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
         }
         return client;
     }
-
-
 
 
 }

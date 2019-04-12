@@ -1,4 +1,4 @@
-package net.thumbtack.onlineshop.models;
+package net.thumbtack.onlineshop.model;
 
 public enum UserType {
 

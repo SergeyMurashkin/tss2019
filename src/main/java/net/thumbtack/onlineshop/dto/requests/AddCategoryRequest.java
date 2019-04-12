@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.models.Category;
+import net.thumbtack.onlineshop.model.Category;
 
 public class AddCategoryRequest {
 

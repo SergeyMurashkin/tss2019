@@ -1,5 +1,7 @@
 package net.thumbtack.onlineshop.dto.responses;
 
+import net.thumbtack.onlineshop.model.Client;
+
 public class ClientRegistrationResponse {
 
     private int id;
@@ -9,10 +11,9 @@ public class ClientRegistrationResponse {
     private String email;
     private String address;
     private String phone;
-    private Integer deposit;
+    private int deposit;
 
     public ClientRegistrationResponse() {
-
     }
 
     public ClientRegistrationResponse(int id,
@@ -22,7 +23,7 @@ public class ClientRegistrationResponse {
                                       String email,
                                       String address,
                                       String phone,
-                                      Integer deposit) {
+                                      int deposit) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -31,6 +32,17 @@ public class ClientRegistrationResponse {
         this.address = address;
         this.phone = phone;
         this.deposit = deposit;
+    }
+
+    public ClientRegistrationResponse(Client client) {
+        id = client.getId();
+        firstName = client.getFirstName();
+        lastName = client.getLastName();
+        patronymic = client.getPatronymic();
+        email = client.getEmail();
+        address = client.getAddress();
+        phone = client.getPhone();
+        deposit = client.getDeposit().getDeposit();
     }
 
     public int getId() {
@@ -89,11 +101,11 @@ public class ClientRegistrationResponse {
         this.phone = phone;
     }
 
-    public Integer getDeposit() {
+    public int getDeposit() {
         return deposit;
     }
 
-    public void setDeposit(Integer deposit) {
+    public void setDeposit(int deposit) {
         this.deposit = deposit;
     }
 }

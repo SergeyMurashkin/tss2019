@@ -1,10 +1,13 @@
 package net.thumbtack.onlineshop.mybatis.mappers;
 
-import net.thumbtack.onlineshop.models.Admin;
-import net.thumbtack.onlineshop.models.Client;
-import net.thumbtack.onlineshop.models.User;
+import net.thumbtack.onlineshop.model.Admin;
+import net.thumbtack.onlineshop.model.Client;
+import net.thumbtack.onlineshop.model.Deposit;
+import net.thumbtack.onlineshop.model.User;
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.mapping.FetchType;
 
+import javax.validation.constraints.Pattern;
 import java.util.List;
 
 public interface UserMapper {
@@ -23,18 +26,25 @@ public interface UserMapper {
     public void insertClient(@Param("client") Client client);
 
     @Insert(" INSERT INTO sessions (id, cookie) VALUES " +
-            " ( #{user.id}, #{cookie} ) ")
+            " ( #{user.id}, #{cookie} ) ON DUPLICATE KEY UPDATE cookie = #{cookie} ")
     public void loginUser(@Param("user") User user,
                           @Param("cookie") String cookie);
 
-    @Select("SELECT * FROM users WHERE (login = #{login} AND password = #{password} ) ")
+    @Select("SELECT * FROM users WHERE (login = #{login} AND password = BINARY #{password} ) ")
     User getUser(@Param("login") String login,
                   @Param("password") String password);
 
-    @Select("SELECT * FROM users INNER JOIN admins USING (id) WHERE (login = #{user.login} AND password = #{user.password} ) " )
+    @Select("SELECT * FROM users INNER JOIN admins USING (id) WHERE (login = #{user.login}" +
+            " AND password = BINARY #{user.password} ) " )
     Admin getAdmin(@Param("user") User user);
 
-    @Select("SELECT * FROM users INNER JOIN clients USING (id) WHERE (login = #{user.login} AND password = #{user.password} ) " )
+    @Select("SELECT * FROM users INNER JOIN clients USING (id) WHERE (login = #{user.login}" +
+            " AND password = BINARY #{user.password} ) " )
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "deposit", column = "id", javaType = Deposit.class,
+                    one = @One (select = "net.thumbtack.onlineshop.mybatis.mappers.UserMapper.getClientDeposit", fetchType = FetchType.EAGER))
+    })
     Client getClient(@Param("user") User user);
 
     @Delete(" DELETE FROM sessions WHERE cookie = #{cookieValue}" )
@@ -70,4 +80,13 @@ public interface UserMapper {
     @Update("UPDATE clients SET deposit = (deposit - #{money}) WHERE id = #{client.id} ")
     void spendMoney(@Param("client") Client client,
                     @Param("money") Integer money);
+
+    @Insert(" INSERT INTO deposits (id) VALUES  (#{client.id})  ")
+    void addDeposit(@Param("client") Client client);
+
+    @Select("SELECT * FROM deposits WHERE id = #{id}")
+    Deposit getClientDeposit(@Param("id") Integer clientId);
+
+    @Select("SELECT login FROM users WHERE login = #{login}")
+    String isLoginExists(@Param("login") String login);
 }

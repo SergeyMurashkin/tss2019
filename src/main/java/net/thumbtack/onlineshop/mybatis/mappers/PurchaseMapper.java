@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.mybatis.mappers;
 
-import net.thumbtack.onlineshop.models.Purchase;
+import net.thumbtack.onlineshop.model.Purchase;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 

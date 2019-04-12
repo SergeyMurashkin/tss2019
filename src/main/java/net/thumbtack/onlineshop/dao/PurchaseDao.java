@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.dao;
 
-import net.thumbtack.onlineshop.models.Purchase;
+import net.thumbtack.onlineshop.model.Purchase;
 
 public interface PurchaseDao {
 

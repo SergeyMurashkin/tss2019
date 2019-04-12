@@ -1,7 +1,9 @@
-package net.thumbtack.onlineshop;
+package net.thumbtack.onlineshop.controller;
 
 
 import com.google.gson.Gson;
+import net.thumbtack.onlineshop.model.OnlineShopException;
+import net.thumbtack.onlineshop.TokenGenerator;
 import net.thumbtack.onlineshop.daoImpl.CategoryDaoImpl;
 import net.thumbtack.onlineshop.daoImpl.ProductDaoImpl;
 import net.thumbtack.onlineshop.daoImpl.PurchaseDaoImpl;
@@ -9,19 +11,18 @@ import net.thumbtack.onlineshop.daoImpl.UserDaoImpl;
 import net.thumbtack.onlineshop.dto.requests.*;
 import net.thumbtack.onlineshop.dto.responses.AdminRegistrationResponse;
 import net.thumbtack.onlineshop.dto.responses.ClientRegistrationResponse;
-import net.thumbtack.onlineshop.models.*;
+import net.thumbtack.onlineshop.model.*;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 @RestController
 @RequestMapping("api")
-public class HelloController {
+public class RequestController {
 
     private TokenGenerator tokenGenerator = new TokenGenerator();
     private Gson gson = new Gson();
@@ -30,72 +31,45 @@ public class HelloController {
     private ProductDaoImpl productDao = new ProductDaoImpl();
     private PurchaseDaoImpl purchaseDao = new PurchaseDaoImpl();
 
-
     @PostMapping("admins")
-    public AdminRegistrationResponse adminRegistration(@RequestBody String requestBody,
+    public AdminRegistrationResponse adminRegistration(@Valid @RequestBody AdminRegistrationRequest request,
                                                        HttpServletResponse response) {
-        AdminRegistrationRequest request = gson.fromJson(requestBody, AdminRegistrationRequest.class);
         Admin admin = request.getAdminFromRequest();
         String cookieValue = tokenGenerator.generateToken();
         userDao.registerAdmin(admin, cookieValue);
         Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
         response.addCookie(cookie);
-        return new AdminRegistrationResponse(admin.getId(),
-                admin.getFirstName(),
-                admin.getLastName(),
-                admin.getPatronymic(),
-                admin.getPosition());
+        return new AdminRegistrationResponse(admin);
     }
 
     @PostMapping("clients")
-    public ClientRegistrationResponse clientRegistration(@RequestBody String requestBody,
+    public ClientRegistrationResponse clientRegistration(@Valid @RequestBody ClientRegistrationRequest request,
                                                          HttpServletResponse response) {
-        ClientRegistrationRequest request = gson.fromJson(requestBody, ClientRegistrationRequest.class);
         Client client = request.getUserFromRequest();
         String cookieValue = tokenGenerator.generateToken();
         userDao.registerClient(client, cookieValue);
         Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
         response.addCookie(cookie);
-        return new ClientRegistrationResponse(client.getId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getPatronymic(),
-                client.getEmail(),
-                client.getAddress(),
-                client.getPhone(),
-                client.getDeposit());
+        return new ClientRegistrationResponse(client);
     }
 
     @PostMapping("sessions")
-    public <T> T loginUser(@RequestBody String requestBody,
-                           HttpServletResponse response) {
-        LoginUserRequest request = gson.fromJson(requestBody, LoginUserRequest.class);
+    public <T> T loginUser(@RequestBody LoginUserRequest request,
+                           HttpServletResponse response) throws OnlineShopException {
 
         String cookieValue = tokenGenerator.generateToken();
         User user = userDao.loginUser(request.getLogin(), request.getPassword(), cookieValue);
-
         if (user.getUserType().equals(UserType.ADMIN.name())) {
             Admin admin = (Admin) user;
             Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
             response.addCookie(cookie);
-            return (T) new AdminRegistrationResponse(admin.getId(),
-                    admin.getFirstName(),
-                    admin.getLastName(),
-                    admin.getPatronymic(),
-                    admin.getPosition());
+            return (T) new AdminRegistrationResponse(admin);
         }
         if (user.getUserType().equals(UserType.CLIENT.name())) {
             Client client = (Client) user;
             Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
             response.addCookie(cookie);
-            return (T) new ClientRegistrationResponse(client.getId(),
-                    client.getFirstName(),
-                    client.getLastName(),
-                    client.getPatronymic(),
-                    client.getEmail(),
-                    client.getAddress(),
-                    client.getPhone(),
-                    client.getDeposit());
+            return (T) new ClientRegistrationResponse(client);
         } else {
             return null;
         }
@@ -110,101 +84,96 @@ public class HelloController {
 
 
     @GetMapping("accounts")
-    public <T> T getActualUser(@CookieValue("JAVASESSIONID") String cookieValue) {
+    public <T> T getActualUser(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
         User user = userDao.getActualUser(cookieValue);
-        if (user.getUserType().equals(UserType.ADMIN.name())) {
-            Admin admin = (Admin) user;
-            return (T) new AdminRegistrationResponse(admin.getId(),
-                    admin.getFirstName(),
-                    admin.getLastName(),
-                    admin.getPatronymic(),
-                    admin.getPosition());
-        }
-        if (user.getUserType().equals(UserType.CLIENT.name())) {
-            Client client = (Client) user;
-            return (T) new ClientRegistrationResponse(client.getId(),
-                    client.getFirstName(),
-                    client.getLastName(),
-                    client.getPatronymic(),
-                    client.getEmail(),
-                    client.getAddress(),
-                    client.getPhone(),
-                    client.getDeposit());
+        if(user==null){
+            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                    null,
+                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
         } else {
-            return null;
+            if (user.getUserType().equals(UserType.ADMIN.name())) {
+                Admin admin = (Admin) user;
+                return (T) new AdminRegistrationResponse(admin);
+            }
+            if (user.getUserType().equals(UserType.CLIENT.name())) {
+                Client client = (Client) user;
+                return (T) new ClientRegistrationResponse(client);
+            }
         }
+        return (T)"{}";
     }
 
 
     @GetMapping("clients")
-    public List<Client> getAllUsers(@CookieValue("JAVASESSIONID") String cookieValue) {
+    public List<Client> getAllUsers(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
         return userDao.getAllClients(cookieValue);
     }
 
     @PutMapping("admins")
     public AdminRegistrationResponse adminProfileEditing(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                         @RequestBody String requestBody) {
-        AdminProfileEditingRequest request = gson.fromJson(requestBody, AdminProfileEditingRequest.class);
+                                                         @RequestBody AdminProfileEditingRequest request) throws OnlineShopException {
         Admin newAdmin = request.createNewUser();
         Admin admin = userDao.adminProfileEditing(newAdmin, cookieValue, request.getOldPassword());
-        return new AdminRegistrationResponse(admin.getId(),
-                admin.getFirstName(),
-                admin.getLastName(),
-                admin.getPatronymic(),
-                admin.getPosition());
+        return new AdminRegistrationResponse(admin);
     }
 
     @PutMapping("clients")
     public ClientRegistrationResponse clientProfileEditing(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                           @RequestBody String requestBody) {
-        ClientProfileEditingRequest request = gson.fromJson(requestBody, ClientProfileEditingRequest.class);
+                                                           @RequestBody ClientProfileEditingRequest request) throws OnlineShopException {
         Client newClient = request.createNewClient();
         Client client = userDao.clientProfileEditing(newClient, cookieValue, request.getOldPassword());
-        return new ClientRegistrationResponse(client.getId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getPatronymic(),
-                client.getEmail(),
-                client.getAddress(),
-                client.getPhone(),
-                client.getDeposit());
+        return new ClientRegistrationResponse(client);
     }
 
 
     @PostMapping("categories")
     public Category addCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                           @RequestBody String requestBody) {
-        AddCategoryRequest request = gson.fromJson(requestBody, AddCategoryRequest.class);
-        Category category = new Category();
-        category.setName(request.getName());
-        category.setParentId(request.getParentId());
+                                                           @RequestBody AddCategoryRequest request) throws OnlineShopException {
+        Category category = new Category(0, request.getName(), request.getParentId());
         return categoryDao.addCategory(cookieValue, category);
     }
 
     @GetMapping("categories/{number}")
     public Category getCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                @PathVariable(name = "number") String number) {
-        Integer id = Integer.valueOf(number);
+                                @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex){
+            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
+                    "number of category in address line",
+                    "Use numbers after {api/categories/} ");
+        }
         return categoryDao.getCategory(cookieValue, id);
     }
 
     @PutMapping("categories/{number}")
     public Category editCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @RequestBody String requestBody,
-                                 @PathVariable(name = "number") String number) {
-        AddCategoryRequest request = gson.fromJson(requestBody, AddCategoryRequest.class);
-        Integer id = Integer.valueOf(number);
-        Category category = new Category();
-        category.setId(id);
-        category.setName(request.getName());
-        category.setParentId(request.getParentId());
+                                 @RequestBody AddCategoryRequest request,
+                                 @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex){
+            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
+                    "number of category in address line",
+                    "Use numbers after {api/categories/} ");
+        }
+        Category category = new Category(id, request.getName(), request.getParentId());
         return categoryDao.editCategory(cookieValue, category);
     }
 
     @DeleteMapping("categories/{number}")
     public Category deleteCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @PathVariable(name = "number") String number) {
-        Integer id = Integer.valueOf(number);
+                                 @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex){
+            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
+                    "number of category in address line",
+                    "Use numbers after {api/categories/} ");
+        }
         categoryDao.deleteCategory(cookieValue, id);
         return new Category();
     }
@@ -296,7 +265,7 @@ public class HelloController {
                 client.getEmail(),
                 client.getAddress(),
                 client.getPhone(),
-                client.getDeposit());
+                client.getDeposit().getDeposit());
     }
 
     @GetMapping("deposits")
@@ -309,7 +278,7 @@ public class HelloController {
                 client.getEmail(),
                 client.getAddress(),
                 client.getPhone(),
-                client.getDeposit());
+                client.getDeposit().getDeposit());
     }
 
     @PostMapping("purchases")

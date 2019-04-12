@@ -1,11 +1,10 @@
 package net.thumbtack.onlineshop.mybatis.mappers;
 
-import net.thumbtack.onlineshop.models.Category;
-import net.thumbtack.onlineshop.models.Product;
+import net.thumbtack.onlineshop.model.Category;
+import net.thumbtack.onlineshop.model.Product;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.mapping.FetchType;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface ProductMapper {

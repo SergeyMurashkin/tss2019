@@ -1,7 +1,6 @@
 package net.thumbtack.onlineshop.dao;
 
-import net.thumbtack.onlineshop.models.Category;
-import net.thumbtack.onlineshop.models.Product;
+import net.thumbtack.onlineshop.model.Product;
 
 import java.util.List;
 

@@ -1,5 +1,7 @@
 package net.thumbtack.onlineshop.dto.responses;
 
+import net.thumbtack.onlineshop.model.Admin;
+
 public class AdminRegistrationResponse {
 
     private int id;
@@ -13,15 +15,23 @@ public class AdminRegistrationResponse {
     }
 
     public AdminRegistrationResponse(int id,
-                              String firstName,
-                              String lastName,
-                              String patronymic,
-                              String position){
+                                     String firstName,
+                                     String lastName,
+                                     String patronymic,
+                                     String position) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.patronymic = patronymic;
         this.position = position;
+    }
+
+    public AdminRegistrationResponse(Admin admin) {
+        id = admin.getId();
+        firstName = admin.getFirstName();
+        lastName = admin.getLastName();
+        patronymic = admin.getPatronymic();
+        position = admin.getPosition();
     }
 
     public int getId() {
@@ -63,4 +73,6 @@ public class AdminRegistrationResponse {
     public void setPosition(String position) {
         this.position = position;
     }
+
+
 }

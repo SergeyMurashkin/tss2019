@@ -1,8 +1,8 @@
-package net.thumbtack.onlineshop.models;
+package net.thumbtack.onlineshop.model;
 
 public class User {
 
-    private Integer id;
+    private int id;
     private String firstName;
     private String lastName;
     private String patronymic;
@@ -22,7 +22,7 @@ public class User {
         this(0, firstName, lastName, patronymic, userType, login, password);
     }
 
-    public User(Integer id,
+    public User(int id,
                 String firstName,
                 String lastName,
                 String patronymic,
@@ -38,11 +38,11 @@ public class User {
         this.password = password;
     }
 
-    public Integer getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 

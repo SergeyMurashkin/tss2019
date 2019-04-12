@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.models.Client;
+import net.thumbtack.onlineshop.model.Client;
 
 public class ClientProfileEditingRequest {
 

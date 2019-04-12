@@ -1,20 +1,44 @@
-package net.thumbtack.onlineshop.models;
+package net.thumbtack.onlineshop.model;
 
 import java.util.List;
 
 public class Category {
 
-    private Integer id;
+    private int id;
     private String name;
     private Integer parentId;
     private String parentName;
     private List<Category> childCategories;
 
+    public Category(){
+    }
+
+    public Category(int id, String name, Integer parentId){
+        this.id = id;
+        this.name = name;
+        this.parentId = parentId;
+    }
+
+    public Category(int id, String name, List<Category> childCategories){
+        this.id = id;
+        this.name = name;
+        this.childCategories = childCategories;
+    }
+
+    public Category(int id, String name, Integer parentId, String parentName, List<Category> childCategories){
+        this.id = id;
+        this.name = name;
+        this.parentId = parentId;
+        this.parentName = parentName;
+        this.childCategories = childCategories;
+    }
+
+
     public Integer getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 

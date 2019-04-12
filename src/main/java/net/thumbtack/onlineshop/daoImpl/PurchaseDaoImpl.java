@@ -1,7 +1,7 @@
 package net.thumbtack.onlineshop.daoImpl;
 
 import net.thumbtack.onlineshop.dao.PurchaseDao;
-import net.thumbtack.onlineshop.models.*;
+import net.thumbtack.onlineshop.model.*;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ public class PurchaseDaoImpl extends DaoImplBase implements PurchaseDao {
                     Product product = getProductMapper(sqlSession).getProduct(purchase.getId());
                     purchase.setUserId(client.getId());
                     if(product.getCount()>=purchase.getCount() &&
-                            client.getDeposit()>=(purchase.getCount()*purchase.getPrice()) &&
+                            client.getDeposit().getDeposit()>=(purchase.getCount()*purchase.getPrice()) &&
                             product.getName().equals(purchase.getName()) &&
                             product.getPrice().equals(purchase.getPrice())){
                         getPurchaseMapper(sqlSession).addPurchase(purchase);

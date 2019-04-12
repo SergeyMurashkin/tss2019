@@ -1,22 +1,48 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.models.Admin;
-import net.thumbtack.onlineshop.models.User;
-import net.thumbtack.onlineshop.models.UserType;
+import net.thumbtack.onlineshop.OnlineShopServer;
+import net.thumbtack.onlineshop.model.Admin;
+import net.thumbtack.onlineshop.model.UserType;
+
+import javax.validation.constraints.*;
 
 public class AdminRegistrationRequest {
 
+
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String lastName;
+
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String patronymic;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String position;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String login;
+
+    @NotBlank
+    @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
+            max=OnlineShopServer.MAX_NAME_LENGTH)
+    //If spaces in password are not needed, uncomment the line below.
+    //@Pattern(regexp = "[^ ]*")
     private String password;
 
-    AdminRegistrationRequest(){
+    public AdminRegistrationRequest(){
     }
 
-    AdminRegistrationRequest(String firstName,
+    public AdminRegistrationRequest(String firstName,
                              String lastName,
                              String patronymic,
                              String position,
@@ -35,7 +61,7 @@ public class AdminRegistrationRequest {
     }
 
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+        this.firstName = firstName.trim();
     }
 
     public String getLastName() {
@@ -43,7 +69,7 @@ public class AdminRegistrationRequest {
     }
 
     public void setLastName(String lastName) {
-        this.lastName = lastName;
+        this.lastName = lastName.trim();
     }
 
     public String getPatronymic() {
@@ -51,7 +77,9 @@ public class AdminRegistrationRequest {
     }
 
     public void setPatronymic(String patronymic) {
-        this.patronymic = patronymic;
+        if(patronymic!=null){
+            this.patronymic = patronymic.trim();
+        }
     }
 
     public String getPosition() {
@@ -59,7 +87,7 @@ public class AdminRegistrationRequest {
     }
 
     public void setPosition(String position) {
-        this.position = position;
+        this.position = position.trim();
     }
 
     public String getLogin() {
@@ -67,7 +95,7 @@ public class AdminRegistrationRequest {
     }
 
     public void setLogin(String login) {
-        this.login = login;
+        this.login = login.trim();
     }
 
     public String getPassword() {
@@ -75,7 +103,7 @@ public class AdminRegistrationRequest {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.password = password.trim();
     }
 
     public Admin getAdminFromRequest() {

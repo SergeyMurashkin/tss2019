@@ -1,9 +1,9 @@
 package net.thumbtack.onlineshop.daoImpl;
 
 import net.thumbtack.onlineshop.dao.ProductDao;
-import net.thumbtack.onlineshop.models.Product;
-import net.thumbtack.onlineshop.models.User;
-import net.thumbtack.onlineshop.models.UserType;
+import net.thumbtack.onlineshop.model.Product;
+import net.thumbtack.onlineshop.model.User;
+import net.thumbtack.onlineshop.model.UserType;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

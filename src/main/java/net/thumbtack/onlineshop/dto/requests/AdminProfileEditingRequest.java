@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.models.Admin;
+import net.thumbtack.onlineshop.model.Admin;
 
 public class AdminProfileEditingRequest {
 

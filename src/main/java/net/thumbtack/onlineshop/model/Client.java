@@ -1,16 +1,16 @@
-package net.thumbtack.onlineshop.models;
+package net.thumbtack.onlineshop.model;
 
 public class Client extends User {
 
     private String email;
     private String address;
     private String phone;
-    private Integer deposit;
+    private Deposit deposit;
 
     public Client() {
     }
 
-    public Client(Integer id,
+    public Client(int id,
                   String firstName,
                   String lastName,
                   String patronymic,
@@ -20,7 +20,7 @@ public class Client extends User {
                   String email,
                   String address,
                   String phone,
-                  Integer deposit) {
+                  Deposit deposit) {
         super(id, firstName, lastName, patronymic, userType, login, password);
         this.email = email;
         this.address = address;
@@ -38,7 +38,7 @@ public class Client extends User {
                   String email,
                   String address,
                   String phone,
-                  Integer deposit) {
+                  Deposit deposit) {
         super(firstName, lastName, patronymic, userType, login, password);
         this.email = email;
         this.address = address;
@@ -70,11 +70,11 @@ public class Client extends User {
         this.phone = phone;
     }
 
-    public Integer getDeposit() {
+    public Deposit getDeposit() {
         return deposit;
     }
 
-    public void setDeposit(Integer deposit) {
+    public void setDeposit(Deposit deposit) {
         this.deposit = deposit;
     }
 

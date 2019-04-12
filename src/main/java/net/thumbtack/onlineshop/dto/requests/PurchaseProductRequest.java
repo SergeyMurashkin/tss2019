@@ -1,6 +1,6 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.models.Purchase;
+import net.thumbtack.onlineshop.model.Purchase;
 
 public class PurchaseProductRequest {
 
