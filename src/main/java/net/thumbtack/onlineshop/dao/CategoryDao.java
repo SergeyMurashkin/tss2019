@@ -13,8 +13,8 @@ public interface CategoryDao {
 
     Category editCategory(String cookieValue, Category category) throws OnlineShopException;
 
-    void deleteCategory(String cookieValue, Integer id);
+    void deleteCategory(String cookieValue, Integer id) throws OnlineShopException;
 
-    List<Category> getAllCategories(String cookieValue);
+    List<Category> getAllCategories(String cookieValue) throws OnlineShopException;
 
 }

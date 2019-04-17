@@ -43,7 +43,7 @@ public interface UserMapper {
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "deposit", column = "id", javaType = Deposit.class,
-                    one = @One (select = "net.thumbtack.onlineshop.mybatis.mappers.UserMapper.getClientDeposit", fetchType = FetchType.EAGER))
+                    one = @One (select = "net.thumbtack.onlineshop.mybatis.mappers.DepositMapper.getClientDeposit", fetchType = FetchType.EAGER))
     })
     Client getClient(@Param("user") User user);
 
@@ -73,19 +73,8 @@ public interface UserMapper {
     void clientProfileEditing(@Param("client") Client client,
                               @Param("cookie") String cookieValue);
 
-    @Update("UPDATE clients SET deposit = (deposit + #{money}) WHERE id = #{user.id} ")
-    void depositMoney(@Param("user")User user,
-                      @Param("money")Integer money);
 
-    @Update("UPDATE clients SET deposit = (deposit - #{money}) WHERE id = #{client.id} ")
-    void spendMoney(@Param("client") Client client,
-                    @Param("money") Integer money);
 
-    @Insert(" INSERT INTO deposits (id) VALUES  (#{client.id})  ")
-    void addDeposit(@Param("client") Client client);
-
-    @Select("SELECT * FROM deposits WHERE id = #{id}")
-    Deposit getClientDeposit(@Param("id") Integer clientId);
 
     @Select("SELECT login FROM users WHERE login = #{login}")
     String isLoginExists(@Param("login") String login);

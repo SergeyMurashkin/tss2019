@@ -44,7 +44,7 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
                 getUserMapper(sqlSession).insertUser(client);
                 getUserMapper(sqlSession).insertClient(client);
                 client.getDeposit().setId(client.getId());
-                getUserMapper(sqlSession).addDeposit(client);
+                getDepositMapper(sqlSession).addDeposit(client);
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't insert Admin. {}", ex);
                 sqlSession.rollback();
@@ -244,44 +244,60 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
     }
 
     @Override
-    public Client depositMoney(String cookieValue, Integer money) {
+    public Client depositMoney(String cookieValue, Integer money) throws OnlineShopException {
         LOGGER.debug("DAO deposit money {}");
-        Client client = new Client();
+        Client client;
         try (SqlSession sqlSession = getSession()) {
             User user = getUserMapper(sqlSession).getActualUser(cookieValue);
-            if (user.getUserType().equals(UserType.CLIENT.name())) {
-                try {
-                    getUserMapper(sqlSession).depositMoney(user, money);
-                    client = getUserMapper(sqlSession).getClient(user);
-                } catch (RuntimeException ex) {
-                    LOGGER.info("Can't deposit money. {}", ex);
-                    sqlSession.rollback();
-                    throw ex;
-                }
-                sqlSession.commit();
-
+            if (user == null) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                        null,
+                        OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
             }
+            if (!user.getUserType().equals(UserType.CLIENT.name())) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
+                        null,
+                        OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
+            }
+            try {
+                getDepositMapper(sqlSession).depositMoney(user, money);
+                client = getUserMapper(sqlSession).getClient(user);
+            } catch (RuntimeException ex) {
+                LOGGER.info("Can't deposit money. {}", ex);
+                sqlSession.rollback();
+                throw ex;
+            }
+            sqlSession.commit();
+
         }
         return client;
     }
 
     @Override
-    public Client getMoney(String cookieValue) {
+    public Client getMoney(String cookieValue) throws OnlineShopException {
         LOGGER.debug("DAO get money {}");
-        Client client = new Client();
+        Client client;
         try (SqlSession sqlSession = getSession()) {
             User user = getUserMapper(sqlSession).getActualUser(cookieValue);
-            if (user.getUserType().equals(UserType.CLIENT.name())) {
-                try {
-                    client = getUserMapper(sqlSession).getClient(user);
-                } catch (RuntimeException ex) {
-                    LOGGER.info("Can't get money. {}", ex);
-                    sqlSession.rollback();
-                    throw ex;
-                }
-                sqlSession.commit();
-
+            if (user == null) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                        null,
+                        OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
             }
+            if (!user.getUserType().equals(UserType.CLIENT.name())) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
+                        null,
+                        OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
+            }
+            try {
+                client = getUserMapper(sqlSession).getClient(user);
+            } catch (RuntimeException ex) {
+                LOGGER.info("Can't get money. {}", ex);
+                sqlSession.rollback();
+                throw ex;
+            }
+            sqlSession.commit();
+
         }
         return client;
     }

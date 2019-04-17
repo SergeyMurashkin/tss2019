@@ -26,9 +26,9 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
             }
             if (user.getUserType().equals(UserType.ADMIN.name())) {
                 try {
-                    if (category.getParentId()==null || category.getParentId() == 0) {
+                    if (category.getParentId() == null || category.getParentId() == 0) {
                         Category checkCategory = getCategoryMapper(sqlSession).getCategoryByName(category.getName());
-                        if(checkCategory!=null){
+                        if (checkCategory != null) {
                             throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NAME_DUPLICATE,
                                     "name",
                                     OnlineShopErrorCode.CATEGORY_NAME_DUPLICATE.getErrorText());
@@ -37,7 +37,7 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
                         getCategoryMapper(sqlSession).addCategory(category);
                     } else {
                         parentCategory = getCategoryMapper(sqlSession).getCategory(category.getParentId());
-                        if(parentCategory==null){
+                        if (parentCategory == null) {
                             throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
                                     "parentId",
                                     OnlineShopErrorCode.CATEGORY_NOT_EXISTS.getErrorText());
@@ -74,7 +74,7 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
             if (user.getUserType().equals(UserType.ADMIN.name())) {
                 try {
                     category = getCategoryMapper(sqlSession).getCategory(id);
-                    if(category==null){
+                    if (category == null) {
                         throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
                                 "number of category in address line",
                                 OnlineShopErrorCode.CATEGORY_NOT_EXISTS.getErrorText());
@@ -95,13 +95,7 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
     }
 
 
-
-
-
     //I need another way to check for errors...
-
-
-
 
 
     @Override
@@ -117,7 +111,7 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
             }
             if (user.getUserType().equals(UserType.ADMIN.name())) {
                 try {
-                    if(category.getParentId()!=0) {
+                    if (category.getParentId() != 0) {
                         parentCategory = getCategoryMapper(sqlSession).getCategory(category.getParentId());
                         category.setParentName(parentCategory.getName());
                     }
@@ -138,10 +132,15 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
     }
 
     @Override
-    public void deleteCategory(String cookieValue, Integer id) {
+    public void deleteCategory(String cookieValue, Integer id) throws OnlineShopException {
         LOGGER.debug("DAO delete Category with id {}", id);
         try (SqlSession sqlSession = getSession()) {
             User user = getUserMapper(sqlSession).getActualUser(cookieValue);
+            if (user == null) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                        null,
+                        OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+            }
             if (user.getUserType().equals(UserType.ADMIN.name())) {
                 try {
                     getCategoryMapper(sqlSession).deleteCategory(id);
@@ -151,16 +150,25 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
                     throw ex;
                 }
                 sqlSession.commit();
+            } else {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_ADMIN,
+                        null,
+                        OnlineShopErrorCode.USER_NOT_ADMIN.getErrorText());
             }
         }
     }
 
     @Override
-    public List<Category> getAllCategories(String cookieValue) {
+    public List<Category> getAllCategories(String cookieValue) throws OnlineShopException {
         LOGGER.debug("DAO get all Categories");
         List<Category> categories = new ArrayList<>();
         try (SqlSession sqlSession = getSession()) {
             User user = getUserMapper(sqlSession).getActualUser(cookieValue);
+            if (user == null) {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
+                        null,
+                        OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
+            }
             if (user.getUserType().equals(UserType.ADMIN.name())) {
                 try {
                     categories = getCategoryMapper(sqlSession).getAllCategories();
@@ -170,6 +178,10 @@ public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
                     throw ex;
                 }
                 sqlSession.commit();
+            } else {
+                throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_ADMIN,
+                        null,
+                        OnlineShopErrorCode.USER_NOT_ADMIN.getErrorText());
             }
         }
         return categories;

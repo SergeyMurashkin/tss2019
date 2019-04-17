@@ -1,5 +1,6 @@
 package net.thumbtack.onlineshop.controller;
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import net.thumbtack.onlineshop.model.OnlineShopException;
 import net.thumbtack.onlineshop.dto.OnlineShopExceptionResponse;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,11 @@ public class ExceptionGlobalController {
     }
 
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MySQLIntegrityConstraintViolationException.class)
+    @ResponseBody
+    public OnlineShopExceptionResponse sqlException(MySQLIntegrityConstraintViolationException ex) {
 
-
-
+        return new OnlineShopExceptionResponse(ex);
+    }
 }

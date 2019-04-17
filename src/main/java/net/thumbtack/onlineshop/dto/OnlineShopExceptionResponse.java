@@ -1,5 +1,6 @@
 package net.thumbtack.onlineshop.dto;
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import net.thumbtack.onlineshop.dto.ExceptionDTO;
 import net.thumbtack.onlineshop.model.OnlineShopException;
 import org.springframework.validation.ObjectError;
@@ -33,6 +34,14 @@ public class OnlineShopExceptionResponse {
         errors = new ArrayList<>();
         errors.add(exceptionDTO);
     }
+
+    public OnlineShopExceptionResponse(MySQLIntegrityConstraintViolationException ex) {
+        ExceptionDTO exceptionDTO = new ExceptionDTO();
+        errors = new ArrayList<>();
+        errors.add(exceptionDTO);
+    }
+
+
 
     public List<ExceptionDTO> getErrors() {
         return errors;

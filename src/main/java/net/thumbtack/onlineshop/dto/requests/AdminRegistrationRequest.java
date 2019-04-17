@@ -8,30 +8,23 @@ import javax.validation.constraints.*;
 
 public class AdminRegistrationRequest {
 
-
-
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
-
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String lastName;
-
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String patronymic;
-
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String position;
-
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String login;
-
     @NotBlank
     @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
             max=OnlineShopServer.MAX_NAME_LENGTH)
@@ -107,14 +100,6 @@ public class AdminRegistrationRequest {
     }
 
     public Admin getAdminFromRequest() {
-        Admin admin = new Admin();
-        admin.setFirstName(firstName);
-        admin.setLastName(lastName);
-        admin.setPatronymic(patronymic);
-        admin.setUserType(UserType.ADMIN.name());
-        admin.setLogin(login);
-        admin.setPassword(password);
-        admin.setPosition(position);
-        return admin;
+        return new Admin(firstName, lastName, patronymic, UserType.ADMIN.name(), login, password, position);
     }
 }

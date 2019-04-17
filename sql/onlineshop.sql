@@ -38,9 +38,8 @@ PRIMARY KEY (id)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
 CREATE TABLE sessions (
-id INT NOT NULL,
+id INT NOT NULL references users(id) ON DELETE CASCADE,
 cookie VARCHAR(250) DEFAULT NULL,
-foreign key (id) references users(id) ON DELETE CASCADE,
 PRIMARY KEY (id),
 UNIQUE KEY cookie (cookie)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
@@ -64,10 +63,8 @@ UNIQUE KEY name (name)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
 CREATE TABLE products_categories (
-productId INT NOT NULL ,
-categoryId INT NOT NULL,
-foreign key (productId) references products(id) ON DELETE CASCADE,
-foreign key (categoryId) references categories(id) ON DELETE CASCADE,
+productId INT NOT NULL references products(id) ON DELETE CASCADE,
+categoryId INT NOT NULL references categories(id) ON DELETE CASCADE,
 UNIQUE KEY productId_categoryId (productId, categoryId)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
@@ -81,6 +78,12 @@ count INT NOT NULL,
 PRIMARY KEY (id)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
-
-
+CREATE TABLE basketProducts (
+clientId INT NOT NULL references clients(id) ON DELETE CASCADE,
+productId INT NOT NULL,
+name VARCHAR(250) NOT NULL,
+price INT NOT NULL,
+count INT NOT NULL,
+UNIQUE KEY clientId_productId (clientId, productId)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
 

@@ -25,9 +25,9 @@ public interface UserDao {
 
     User clientProfileEditing(Client client, String cookieValue, String oldPassword) throws OnlineShopException;
 
-    Client depositMoney(String cookieValue, Integer money);
+    Client depositMoney(String cookieValue, Integer money) throws OnlineShopException;
 
-    Client getMoney(String cookieValue);
+    Client getMoney(String cookieValue) throws OnlineShopException;
 
 
 }

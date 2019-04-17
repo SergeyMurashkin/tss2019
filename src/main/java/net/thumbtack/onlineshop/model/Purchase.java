@@ -3,11 +3,23 @@ package net.thumbtack.onlineshop.model;
 public class Purchase {
 
     private int id;
-    private int userId;
+    private int clientId;
     private int productId;
     private String name;
     private int price;
     private int count;
+
+    public Purchase(){
+    }
+
+    public Purchase(int id, int clientId, int productId, String name, int price, int count){
+        this.id = id;
+        this.clientId = clientId;
+        this.productId = productId;
+        this.name = name;
+        this.price = price;
+        this.count = count;
+    }
 
     public int getId() {
         return id;
@@ -17,12 +29,12 @@ public class Purchase {
         this.id = id;
     }
 
-    public int getUserId() {
-        return userId;
+    public int getClientId() {
+        return clientId;
     }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
+    public void setClientId(int clientId) {
+        this.clientId = clientId;
     }
 
     public int getProductId() {

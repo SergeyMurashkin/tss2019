@@ -1,19 +1,23 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.model.Purchase;
+import javax.validation.constraints.Min;
 
 public class PurchaseProductRequest {
 
-    private Integer id;
-    private String  name;
-    private Integer price;
-    private Integer count;
+    private int id;
+    private String name;
+    private int price;
+    @Min(value = 1)
+    private int count = 1;
 
-    public Integer getId() {
+    public PurchaseProductRequest(){
+    }
+
+    public int getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -25,29 +29,20 @@ public class PurchaseProductRequest {
         this.name = name;
     }
 
-    public Integer getPrice() {
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 
-    public Integer getCount() {
+    public int getCount() {
         return count;
     }
 
-    public void setCount(Integer count) {
+    public void setCount(int count) {
         this.count = count;
-    }
-
-    public Purchase createPurchase(){
-        Purchase purchase = new Purchase();
-        purchase.setProductId(id);
-        purchase.setName(name);
-        purchase.setPrice(price);
-        purchase.setCount(count);
-        return purchase;
     }
 
 }

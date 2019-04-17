@@ -6,8 +6,8 @@ import org.apache.ibatis.annotations.Param;
 
 public interface PurchaseMapper {
 
-    @Insert("INSERT INTO purchases (userId, productId, name, price, count) VALUES " +
-            " (#{purchase.userId}, #{purchase.productId}, #{purchase.name}, #{purchase.price}, #{purchase.count} ) ")
+    @Insert("INSERT INTO purchases (clientId, productId, name, price, count) VALUES " +
+            " (#{purchase.clientId}, #{purchase.productId}, #{purchase.name}, #{purchase.price}, #{purchase.count} ) ")
     void addPurchase(@Param("purchase") Purchase purchase);
 
 }

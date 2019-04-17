@@ -2,25 +2,24 @@ package net.thumbtack.onlineshop.dto.requests;
 
 import net.thumbtack.onlineshop.OnlineShopServer;
 
-import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
-import java.util.ArrayList;
 import java.util.List;
 
-public class AddProductRequest {
+public class EditProductRequest {
 
-    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
+    @Size(max = OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
-    @Min(0)
-    private int price;
-    private int count;
-    private List<Integer> categoriesId = new ArrayList<>();
+    @Size
+    private Integer price;
+    @Size
+    private Integer count;
+    private List<Integer> categoriesId;
 
 
-    public AddProductRequest() {
+    public EditProductRequest() {
     }
 
-    public AddProductRequest(String name, int price, int count, List<Integer> categoriesId) {
+    public EditProductRequest(String name, int price, int count, List<Integer> categoriesId) {
         this.name = name;
         this.price = price;
         this.count = count;
@@ -61,12 +60,13 @@ public class AddProductRequest {
 
     @Override
     public String toString() {
-        return "AddProductRequest{" +
+        return "EditProductRequest{" +
                 "name='" + name + '\'' +
                 ", price=" + price +
                 ", count=" + count +
                 ", categoriesId=" + categoriesId +
                 '}';
     }
+
 
 }

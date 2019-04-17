@@ -4,6 +4,7 @@ import net.thumbtack.onlineshop.model.Category;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.mapping.FetchType;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface CategoryMapper {
@@ -25,7 +26,7 @@ public interface CategoryMapper {
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "childCategories", column = "id", javaType = List.class,
-                    many = @Many(select = "net.thumbtack.onlineshop.mybatis.mappers.CategoryMapper.getChildCategories", fetchType = FetchType.LAZY))
+                    many = @Many(select = "net.thumbtack.onlineshop.mybatis.mappers.CategoryMapper.getChildCategories", fetchType = FetchType.EAGER))
     })
     Category getCategoryByName(@Param("name") String name);
 
@@ -40,12 +41,19 @@ public interface CategoryMapper {
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "childCategories", column = "id", javaType = List.class,
-                    many = @Many(select = "net.thumbtack.onlineshop.mybatis.mappers.CategoryMapper.getChildCategories", fetchType = FetchType.LAZY))
+                    one = @One(select = "net.thumbtack.onlineshop.mybatis.mappers.CategoryMapper.getChildCategories", fetchType = FetchType.EAGER))
     })
     List<Category> getAllCategories();
 
     @Select(" SELECT * FROM categories WHERE parentId = #{id} ORDER BY name")
     List<Category> getChildCategories(@Param("id") Integer id);
 
+    @Select({"<script>",
+            "SELECT * FROM categories WHERE id IN ",
+            "<foreach  item='item' collection='list' open='(' separator=',' close=')' >",
+            " #{item} ",
+            "</foreach>",
+            "</script>" })
 
+    List<Category> getCategories(@Param("list") List<Integer> categoriesId);
 }

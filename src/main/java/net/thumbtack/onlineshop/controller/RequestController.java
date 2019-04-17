@@ -2,7 +2,6 @@ package net.thumbtack.onlineshop.controller;
 
 
 import com.google.gson.Gson;
-import net.thumbtack.onlineshop.model.OnlineShopException;
 import net.thumbtack.onlineshop.TokenGenerator;
 import net.thumbtack.onlineshop.daoImpl.CategoryDaoImpl;
 import net.thumbtack.onlineshop.daoImpl.ProductDaoImpl;
@@ -86,7 +85,7 @@ public class RequestController {
     @GetMapping("accounts")
     public <T> T getActualUser(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
         User user = userDao.getActualUser(cookieValue);
-        if(user==null){
+        if (user == null) {
             throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
                     null,
                     OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
@@ -100,7 +99,7 @@ public class RequestController {
                 return (T) new ClientRegistrationResponse(client);
             }
         }
-        return (T)"{}";
+        return (T) "{}";
     }
 
 
@@ -128,7 +127,7 @@ public class RequestController {
 
     @PostMapping("categories")
     public Category addCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                           @RequestBody AddCategoryRequest request) throws OnlineShopException {
+                                @RequestBody AddCategoryRequest request) throws OnlineShopException {
         Category category = new Category(0, request.getName(), request.getParentId());
         return categoryDao.addCategory(cookieValue, category);
     }
@@ -139,7 +138,7 @@ public class RequestController {
         Integer id;
         try {
             id = Integer.valueOf(number);
-        } catch (NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
                     "number of category in address line",
                     "Use numbers after {api/categories/} ");
@@ -154,7 +153,7 @@ public class RequestController {
         Integer id;
         try {
             id = Integer.valueOf(number);
-        } catch (NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
                     "number of category in address line",
                     "Use numbers after {api/categories/} ");
@@ -164,134 +163,151 @@ public class RequestController {
     }
 
     @DeleteMapping("categories/{number}")
-    public Category deleteCategory(@CookieValue("JAVASESSIONID") String cookieValue,
+    public String deleteCategory(@CookieValue("JAVASESSIONID") String cookieValue,
                                  @PathVariable(name = "number") String number) throws OnlineShopException {
         Integer id;
         try {
             id = Integer.valueOf(number);
-        } catch (NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
                     "number of category in address line",
                     "Use numbers after {api/categories/} ");
         }
         categoryDao.deleteCategory(cookieValue, id);
-        return new Category();
+        return "{}";
     }
 
     @GetMapping("categories")
-    public List<Category> getAllCategories(@CookieValue("JAVASESSIONID") String cookieValue) {
+    public List<Category> getAllCategories(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
         return categoryDao.getAllCategories(cookieValue);
     }
 
-
     @PostMapping("products")
     public Product addProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                                @RequestBody String requestBody) {
-        AddProductRequest request = gson.fromJson(requestBody, AddProductRequest.class);
-        Product product = new Product();
-        product.setName(request.getName());
-        product.setPrice(request.getPrice());
-        product.setCount(request.getCount());
-        List<Category> categories = new ArrayList<>();
-        if(request.getCategories()!=null) {
-            for (Integer id : request.getCategories()) {
-                Category category = new Category();
-                category.setId(id);
-                categories.add(category);
-            }
-        }
-        product.setCategories(categories);
-        productDao.addProduct(cookieValue, product);
+                              @RequestBody AddProductRequest request) throws OnlineShopException {
+        Product product = new Product(0, request.getName(), request.getPrice(), request.getCount(), new ArrayList<>());
+        System.out.println(request.getCategoriesId());
+        productDao.addProduct(cookieValue, product, request.getCategoriesId());
         return product;
     }
 
 
     @PutMapping("products/{number}")
     public Product editProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                              @RequestBody String requestBody,
-                               @PathVariable(name = "number") String number) {
-        AddProductRequest request = gson.fromJson(requestBody, AddProductRequest.class);
-        Integer productId = Integer.valueOf(number);
-        Product product = new Product();
-        product.setId(productId);
-        product.setName(request.getName());
-        product.setPrice(request.getPrice());
-        product.setCount(request.getCount());
-        List<Category> categories = new ArrayList<>();
-        for (Integer id : request.getCategories()) {
-            Category category = new Category();
-            category.setId(id);
-            categories.add(category);
+                               @RequestBody EditProductRequest request,
+                               @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer productId;
+        try {
+            productId = Integer.valueOf(number);
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                    "number of product in address line",
+                    "Use numbers after {api/products/} ");
         }
-        product.setCategories(categories);
-        productDao.editProduct(cookieValue, product);
+        Product product = new Product(productId, request.getName(), request.getPrice(), request.getCount(), new ArrayList<>());
+        productDao.editProduct(cookieValue, product, request.getCategoriesId());
         return product;
     }
 
     @DeleteMapping("products/{number}")
-    public Product deleteProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                               @PathVariable(name = "number") String number) {
-        Integer id = Integer.valueOf(number);
+    public String  deleteProduct(@CookieValue("JAVASESSIONID") String cookieValue,
+                                 @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                    "number of product in address line",
+                    "Use numbers after {api/products/} ");
+        }
         productDao.deleteProduct(cookieValue, id);
-        return new Product() ;
+        return "{}";
     }
 
     @GetMapping("products/{number}")
     public Product getProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @PathVariable(name = "number") String number) {
-        Integer id = Integer.valueOf(number);
+                              @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                    "number of product in address line",
+                    "Use numbers after {api/products/} ");
+        }
         return productDao.getProduct(cookieValue, id);
     }
 
     @GetMapping("products")
     public List<Product> getProductsByCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                              @RequestParam(name = "category", required = false) List<Integer> categories,
-                              @RequestParam(name = "order", defaultValue = "product", required = false) String  order) {
-
-        return productDao.getProductsByCategory(cookieValue, categories, order);
+                                               @RequestParam(name = "category", required = false) List<Integer> categoriesId,
+                                               @RequestParam(name = "order", defaultValue = "product", required = false) String order) throws OnlineShopException {
+         return productDao.getProductsByCategory(cookieValue, categoriesId, order);
     }
 
     @PutMapping("deposits")
     public ClientRegistrationResponse depositMoney(@CookieValue("JAVASESSIONID") String cookieValue,
-                                         @RequestBody String requestBody) {
-        DepositMoneyRequest deposit = gson.fromJson(requestBody, DepositMoneyRequest.class);
-        Integer money = Integer.valueOf(deposit.getDeposit());
-        System.out.println(money);
+                                                   @RequestBody DepositMoneyRequest deposit) throws OnlineShopException {
+        Integer money;
+        try {
+           money = Integer.valueOf(deposit.getDeposit());
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.DEPOSIT_INCORRECT_VALUE,
+                    "deposit",
+                    OnlineShopErrorCode.DEPOSIT_INCORRECT_VALUE.getErrorText());
+        }
         Client client = userDao.depositMoney(cookieValue, money);
-        return new ClientRegistrationResponse(client.getId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getPatronymic(),
-                client.getEmail(),
-                client.getAddress(),
-                client.getPhone(),
-                client.getDeposit().getDeposit());
+        return new ClientRegistrationResponse(client);
     }
 
     @GetMapping("deposits")
-    public ClientRegistrationResponse getMoney(@CookieValue("JAVASESSIONID") String cookieValue) {
+    public ClientRegistrationResponse getMoney(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
         Client client = userDao.getMoney(cookieValue);
-        return new ClientRegistrationResponse(client.getId(),
-                client.getFirstName(),
-                client.getLastName(),
-                client.getPatronymic(),
-                client.getEmail(),
-                client.getAddress(),
-                client.getPhone(),
-                client.getDeposit().getDeposit());
+        return new ClientRegistrationResponse(client);
     }
 
     @PostMapping("purchases")
     public PurchaseProductRequest purchaseProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                                            @RequestBody String requestBody) {
-        PurchaseProductRequest request = gson.fromJson(requestBody, PurchaseProductRequest.class);
-        if(request.getCount()==null){
-            request.setCount(1);
-        }
-        Purchase purchase = request.createPurchase();
+                                                  @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        Purchase purchase = new Purchase(0,
+                0,
+                request.getId(),
+                request.getName(),
+                request.getPrice(),
+                request.getCount());
         purchaseDao.purchaseProduct(cookieValue, purchase);
         return request;
     }
+
+
+    @PostMapping("baskets")
+    public List<Product> addProductInBasket(@CookieValue("JAVASESSIONID") String cookieValue,
+                                                  @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        Product basketProduct = new Product(
+                request.getId(),
+                request.getName(),
+                request.getPrice(),
+                request.getCount(),
+                new ArrayList<>());
+        return productDao.addProductInBasket(cookieValue, basketProduct);
+    }
+
+    @DeleteMapping("baskets/{number}")
+    public String  deleteProductFromBasket(@CookieValue("JAVASESSIONID") String cookieValue,
+                                 @PathVariable(name = "number") String number) throws OnlineShopException {
+        Integer productId;
+        try {
+            productId = Integer.valueOf(number);
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                    "number of product in address line",
+                    "Use numbers after {api/baskets/} ");
+        }
+        productDao.deleteProductFromBasket(cookieValue, productId);
+        return "{}";
+    }
+
+
 
 
 }
