@@ -99,7 +99,4 @@ public class AdminRegistrationRequest {
         this.password = password.trim();
     }
 
-    public Admin getAdminFromRequest() {
-        return new Admin(firstName, lastName, patronymic, UserType.ADMIN.name(), login, password, position);
-    }
 }

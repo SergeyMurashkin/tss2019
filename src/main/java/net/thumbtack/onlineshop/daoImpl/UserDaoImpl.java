@@ -72,22 +72,20 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
                     throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_LOGIN,
                             "Login",
                             OnlineShopErrorCode.USER_WRONG_LOGIN.getErrorText());
-                } else {
-                    user = getUserMapper(sqlSession).getUser(login, password);
-                    if (user == null) {
-                        throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
-                                "Password",
-                                OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
-                    } else {
-                        if (user.getUserType().equals(UserType.ADMIN.name())) {
-                            user = getUserMapper(sqlSession).getAdmin(user);
-                        }
-                        if (user.getUserType().equals(UserType.CLIENT.name())) {
-                            user = getUserMapper(sqlSession).getClient(user);
-                        }
-                    }
-                    getUserMapper(sqlSession).loginUser(user, cookie);
                 }
+                user = getUserMapper(sqlSession).getUser(login, password);
+                if (user == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
+                            "Password",
+                            OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
+                }
+                if (user.getUserType().equals(UserType.ADMIN.name())) {
+                    user = getUserMapper(sqlSession).getAdmin(user);
+                }
+                if (user.getUserType().equals(UserType.CLIENT.name())) {
+                    user = getUserMapper(sqlSession).getClient(user);
+                }
+                getUserMapper(sqlSession).loginUser(user, cookie);
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't login User. {}", ex);
                 sqlSession.rollback();
@@ -124,15 +122,13 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
                     throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
                             null,
                             OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-                } else {
-                    if (user.getUserType().equals(UserType.ADMIN.name())) {
-                        user = getUserMapper(sqlSession).getAdmin(user);
-                    }
-                    if (user.getUserType().equals(UserType.CLIENT.name())) {
-                        user = getUserMapper(sqlSession).getClient(user);
-                    }
                 }
-
+                if (user.getUserType().equals(UserType.ADMIN.name())) {
+                    user = getUserMapper(sqlSession).getAdmin(user);
+                }
+                if (user.getUserType().equals(UserType.CLIENT.name())) {
+                    user = getUserMapper(sqlSession).getClient(user);
+                }
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't get User. {}", ex);
                 sqlSession.rollback();
@@ -154,10 +150,9 @@ public class UserDaoImpl extends DaoImplBase implements UserDao {
                     throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
                             null,
                             OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-                } else {
-                    if (user.getUserType().equals(UserType.ADMIN.name())) {
-                        clients = getUserMapper(sqlSession).getAllClients();
-                    }
+                }
+                if (user.getUserType().equals(UserType.ADMIN.name())) {
+                    clients = getUserMapper(sqlSession).getAllClients();
                 }
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't get all Users. {}", ex);

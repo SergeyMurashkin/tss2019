@@ -135,18 +135,4 @@ public class ClientRegistrationRequest {
         this.password = password;
     }
 
-    public Client getUserFromRequest() {
-        Client client = new Client();
-        client.setFirstName(firstName);
-        client.setLastName(lastName);
-        client.setPatronymic(patronymic);
-        client.setUserType(UserType.CLIENT.name());
-        client.setLogin(login);
-        client.setPassword(password);
-        client.setEmail(email);
-        client.setAddress(address);
-        client.setPhone(phone);
-        client.setDeposit(new Deposit());
-              return client;
-    }
 }

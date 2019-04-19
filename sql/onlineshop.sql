@@ -58,6 +58,7 @@ id INT NOT NULL AUTO_INCREMENT,
 name VARCHAR(250) NOT NULL,
 price INT NOT NULL,
 count INT DEFAULT 0,
+isDeleted boolean DEFAULT false,
 PRIMARY KEY (id),
 UNIQUE KEY name (name)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
@@ -80,10 +81,10 @@ PRIMARY KEY (id)
 
 CREATE TABLE basketProducts (
 clientId INT NOT NULL references clients(id) ON DELETE CASCADE,
-productId INT NOT NULL,
-name VARCHAR(250) NOT NULL,
-price INT NOT NULL,
+productId INT NOT NULL references products(id) ON DELETE CASCADE,
 count INT NOT NULL,
 UNIQUE KEY clientId_productId (clientId, productId)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+
 

@@ -21,4 +21,8 @@ public interface ProductDao {
     List<Product> addProductInBasket(String cookieValue, Product basketProduct) throws OnlineShopException;
 
     void deleteProductFromBasket(String cookieValue, Integer productId) throws OnlineShopException;
+
+    List<Product> changeProductQuantity(String cookieValue, Product newBasketProduct) throws OnlineShopException;
+
+    List<Product> getClientBasket(String cookieValue) throws OnlineShopException;
 }

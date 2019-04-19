@@ -30,29 +30,30 @@ public interface ProductMapper {
     @Delete("DELETE FROM products_categories WHERE productId = #{product.id} ")
     void deleteAllProductCategories( @Param("product") Product product);
 
-    @Delete("DELETE FROM products WHERE id = #{id}")
+    @Update("UPDATE products SET isDeleted = true WHERE id = #{id}")
     void deleteProduct(@Param("id")Integer id);
 
-    @Select("SELECT * FROM products WHERE id = #{id} ")
+    @Select("SELECT id,name,price,count FROM products WHERE id = #{id} AND isDeleted = false ")
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "categories", column = "id", javaType = List.class,
-                    many = @Many(select = "net.thumbtack.onlineshop.mybatis.mappers.ProductMapper.getProductCategories", fetchType = FetchType.EAGER))
+                    one = @One(select = "net.thumbtack.onlineshop.mybatis.mappers.ProductMapper.getProductCategories", fetchType = FetchType.EAGER))
     })
     Product getProduct(@Param("id") Integer id);
 
     @Select("SELECT * FROM categories WHERE id IN " +
-            "(SELECT categoryId FROM products_categories WHERE productId = #{id}) ORDER BY name ")
+            "(SELECT categoryId FROM products_categories WHERE productId = #{id})  ORDER BY name ")
     List<Category> getProductCategories(@Param("id") Integer productId);
 
     @Update("UPDATE products SET count = (count - #{soldCount}) WHERE (id = #{product.id}) ")
     void reduceProductCount(@Param("product") Product product,
                             @Param("soldCount") Integer soldCount);
 
-    @Select("SELECT * FROM products WHERE id NOT IN (SELECT productId FROM products_categories) ORDER BY name")
+    @Select("SELECT * FROM products WHERE id NOT IN (SELECT productId FROM products_categories) " +
+            " AND isDeleted = false ORDER BY name")
     List<Product> getProductsWithoutCategories();
 
-    @Select("SELECT * FROM products ORDER BY name")
+    @Select("SELECT * FROM products WHERE isDeleted = false ORDER BY name")
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "categories", column = "id", javaType = List.class,
@@ -66,7 +67,7 @@ public interface ProductMapper {
             "<foreach  item='item' collection='list' open='(' separator=',' close=')' >",
             " #{item} ",
             "</foreach>",
-            " ) ORDER BY name ",
+            " ) AND isDeleted = false ORDER BY name ",
             "</script>" })
     @Results({
             @Result(property = "id", column = "id"),
@@ -76,6 +77,7 @@ public interface ProductMapper {
     List<Product> getProductsByCategoriesByProductOrder(@Param("list") List<Integer> categoriesId);
 
 
-    @Select("SELECT * FROM products WHERE id IN ( SELECT productId FROM products_categories WHERE categoryId = #{id}) ORDER BY name")
+    @Select("SELECT * FROM products WHERE id IN ( SELECT productId FROM products_categories WHERE categoryId = #{id}) " +
+            " AND isDeleted = false ORDER BY name")
     List<Product> getProductsByCategory(@Param("id") Integer categoryId);
 }

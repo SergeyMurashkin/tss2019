@@ -1,7 +1,5 @@
 package net.thumbtack.onlineshop.controller;
 
-
-import com.google.gson.Gson;
 import net.thumbtack.onlineshop.TokenGenerator;
 import net.thumbtack.onlineshop.daoImpl.CategoryDaoImpl;
 import net.thumbtack.onlineshop.daoImpl.ProductDaoImpl;
@@ -10,6 +8,8 @@ import net.thumbtack.onlineshop.daoImpl.UserDaoImpl;
 import net.thumbtack.onlineshop.dto.requests.*;
 import net.thumbtack.onlineshop.dto.responses.AdminRegistrationResponse;
 import net.thumbtack.onlineshop.dto.responses.ClientRegistrationResponse;
+import net.thumbtack.onlineshop.dto.responses.ConsolidatedStatementResponse;
+import net.thumbtack.onlineshop.dto.responses.PurchaseProductFromBasketResponse;
 import net.thumbtack.onlineshop.model.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,6 @@ import java.util.List;
 public class RequestController {
 
     private TokenGenerator tokenGenerator = new TokenGenerator();
-    private Gson gson = new Gson();
     private UserDaoImpl userDao = new UserDaoImpl();
     private CategoryDaoImpl categoryDao = new CategoryDaoImpl();
     private ProductDaoImpl productDao = new ProductDaoImpl();
@@ -33,7 +32,13 @@ public class RequestController {
     @PostMapping("admins")
     public AdminRegistrationResponse adminRegistration(@Valid @RequestBody AdminRegistrationRequest request,
                                                        HttpServletResponse response) {
-        Admin admin = request.getAdminFromRequest();
+        Admin admin = new Admin(request.getFirstName(),
+                request.getLastName(),
+                request.getPatronymic(),
+                UserType.ADMIN.name(),
+                request.getLogin(),
+                request.getPassword(),
+                request.getPosition());
         String cookieValue = tokenGenerator.generateToken();
         userDao.registerAdmin(admin, cookieValue);
         Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
@@ -44,7 +49,16 @@ public class RequestController {
     @PostMapping("clients")
     public ClientRegistrationResponse clientRegistration(@Valid @RequestBody ClientRegistrationRequest request,
                                                          HttpServletResponse response) {
-        Client client = request.getUserFromRequest();
+        Client client = new Client(request.getFirstName(),
+                request.getLastName(),
+                request.getPatronymic(),
+                UserType.CLIENT.name(),
+                request.getLogin(),
+                request.getPassword(),
+                request.getEmail(),
+                request.getAddress(),
+                request.getPhone(),
+                new Deposit());
         String cookieValue = tokenGenerator.generateToken();
         userDao.registerClient(client, cookieValue);
         Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
@@ -186,7 +200,6 @@ public class RequestController {
     public Product addProduct(@CookieValue("JAVASESSIONID") String cookieValue,
                               @RequestBody AddProductRequest request) throws OnlineShopException {
         Product product = new Product(0, request.getName(), request.getPrice(), request.getCount(), new ArrayList<>());
-        System.out.println(request.getCategoriesId());
         productDao.addProduct(cookieValue, product, request.getCategoriesId());
         return product;
     }
@@ -307,7 +320,48 @@ public class RequestController {
         return "{}";
     }
 
+    @PutMapping("baskets")
+    public List<Product> changeProductQuantity (@CookieValue("JAVASESSIONID") String cookieValue,
+                                         @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        Product newBasketProduct = new Product(
+                request.getId(),
+                request.getName(),
+                request.getPrice(),
+                request.getCount(),
+                new ArrayList<>());
+        return productDao.changeProductQuantity(cookieValue, newBasketProduct);
+    }
 
+    @GetMapping("baskets")
+    public List<Product> getClientBasket (@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
+        return productDao.getClientBasket(cookieValue);
+    }
+
+    @PostMapping("purchases/baskets")
+    public PurchaseProductFromBasketResponse purchaseProductsFromBasket(@CookieValue("JAVASESSIONID") String cookieValue,
+                                                                        @RequestBody List<PurchaseProductFromBasketRequest> requests) throws OnlineShopException {
+        List<Product> products = new ArrayList<>();
+        for (PurchaseProductFromBasketRequest request : requests) {
+            Product product = new Product(
+                    request.getId(),
+                    request.getName(),
+                    request.getPrice(),
+                    request.getCount(),
+                    null);
+            products.add(product);
+        }
+        return purchaseDao.purchaseProductsFromBasket(cookieValue, products);
+    }
+
+    @GetMapping("purchases")
+    public ConsolidatedStatementResponse getConsolidatedStatement(@CookieValue("JAVASESSIONID") String cookieValue,
+                                                                  @RequestParam(name = "category", required = false) List<Integer> categoriesId,
+                                                                  @RequestParam(name = "product", required = false) List<Integer> productsId,
+                                                                  @RequestParam(name = "client", required = false) List<Integer> clientsId) throws OnlineShopException {
+        ConsolidatedStatementResponse response = purchaseDao.getConsolidatedStatement(categoriesId,productsId,clientsId);
+
+        return null;
+    }
 
 
 }
