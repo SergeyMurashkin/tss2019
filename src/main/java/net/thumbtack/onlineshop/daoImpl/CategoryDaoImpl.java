@@ -11,6 +11,7 @@ import java.util.List;
 
 public class CategoryDaoImpl extends DaoImplBase implements CategoryDao {
 
+	// REVU move logic to service
     private static final Logger LOGGER = LoggerFactory.getLogger(CategoryDaoImpl.class);
 
     @Override

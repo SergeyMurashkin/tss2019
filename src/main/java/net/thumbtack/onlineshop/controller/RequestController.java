@@ -32,7 +32,8 @@ public class RequestController {
     @PostMapping("admins")
     public AdminRegistrationResponse adminRegistration(@Valid @RequestBody AdminRegistrationRequest request,
                                                        HttpServletResponse response) {
-        Admin admin = new Admin(request.getFirstName(),
+    	// REVU move code to service
+    	Admin admin = new Admin(request.getFirstName(),
                 request.getLastName(),
                 request.getPatronymic(),
                 UserType.ADMIN.name(),
@@ -49,6 +50,7 @@ public class RequestController {
     @PostMapping("clients")
     public ClientRegistrationResponse clientRegistration(@Valid @RequestBody ClientRegistrationRequest request,
                                                          HttpServletResponse response) {
+    	// REVU move code to service
         Client client = new Client(request.getFirstName(),
                 request.getLastName(),
                 request.getPatronymic(),
@@ -58,9 +60,11 @@ public class RequestController {
                 request.getEmail(),
                 request.getAddress(),
                 request.getPhone(),
+                // REVU create constructor without Deposit parameter, let it makes new Deposit() inside
                 new Deposit());
         String cookieValue = tokenGenerator.generateToken();
         userDao.registerClient(client, cookieValue);
+        // REVU magic constant "JAVASESSIONID", create static final field
         Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
         response.addCookie(cookie);
         return new ClientRegistrationResponse(client);
@@ -147,6 +151,7 @@ public class RequestController {
     }
 
     @GetMapping("categories/{number}")
+    // REVU why not int number and catch exception in ExceptionGlobalController ? 
     public Category getCategory(@CookieValue("JAVASESSIONID") String cookieValue,
                                 @PathVariable(name = "number") String number) throws OnlineShopException {
         Integer id;
@@ -157,6 +162,7 @@ public class RequestController {
                     "number of category in address line",
                     "Use numbers after {api/categories/} ");
         }
+        // REVU do not pass cookie value to all methods
         return categoryDao.getCategory(cookieValue, id);
     }
 

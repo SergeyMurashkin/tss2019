@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+// REVU unnecessary, remove
 public class JdbcUtils {
 
     private static Connection connection;
