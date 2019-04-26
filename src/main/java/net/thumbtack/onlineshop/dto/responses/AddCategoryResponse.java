@@ -2,16 +2,26 @@ package net.thumbtack.onlineshop.dto.responses;
 
 public class AddCategoryResponse {
 
-    Integer id;
-    String name;
-    Integer parentId;
-    String parentName;
+    private int id;
+    private String name;
+    private Integer parentId;
+    private String parentName;
 
-    public Integer getId() {
+    public AddCategoryResponse(int id,
+                               String name,
+                               Integer parentId,
+                               String parentName){
+        this.id = id;
+        this.name = name;
+        this.parentId = parentId;
+        this.parentName = parentName;
+    }
+
+    public int getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -38,4 +48,5 @@ public class AddCategoryResponse {
     public void setParentName(String parentName) {
         this.parentName = parentName;
     }
+
 }

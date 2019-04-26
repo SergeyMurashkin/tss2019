@@ -1,5 +1,6 @@
 package net.thumbtack.onlineshop.dto;
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import net.thumbtack.onlineshop.model.OnlineShopException;
 
 public class ExceptionDTO {
@@ -8,18 +9,23 @@ public class ExceptionDTO {
     private String field;
     private String message;
 
-    public ExceptionDTO(){
+    public ExceptionDTO() {
 
     }
 
-    public ExceptionDTO(OnlineShopException ex){
+    public ExceptionDTO(OnlineShopException ex) {
         this(ex.getErrorCode().name(), ex.getField(), ex.getMessage());
     }
 
-    public ExceptionDTO(String  errorCode, String field, String message){
+    public ExceptionDTO(String errorCode, String field, String message) {
         this.errorCode = errorCode;
         this.field = field;
         this.message = message;
+    }
+
+    public ExceptionDTO(MySQLIntegrityConstraintViolationException ex) {
+        this.errorCode = ex.getErrorCode() + "";
+        this.message = ex.getLocalizedMessage();
     }
 
 

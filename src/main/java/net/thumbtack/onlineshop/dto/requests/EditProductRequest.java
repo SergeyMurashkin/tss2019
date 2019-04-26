@@ -2,6 +2,7 @@ package net.thumbtack.onlineshop.dto.requests;
 
 import net.thumbtack.onlineshop.OnlineShopServer;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 import java.util.List;
 
@@ -9,11 +10,11 @@ public class EditProductRequest {
 
     @Size(max = OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
-    @Size
+    @Min(1)
     private Integer price;
-    @Size
+    @Min(0)
     private Integer count;
-    private List<Integer> categoriesId;
+    private List<@Min(1) Integer> categoriesId;
 
 
     public EditProductRequest() {

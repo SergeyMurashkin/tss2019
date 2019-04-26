@@ -1,3 +1,4 @@
+
 DROP DATABASE IF EXISTS onlineshop;
 CREATE DATABASE onlineshop;
 USE onlineshop;
@@ -33,6 +34,7 @@ PRIMARY KEY (id)
 CREATE TABLE deposits (
 id INT NOT NULL,
 deposit INT DEFAULT 0,
+version INT DEFAULT 0,
 foreign key (id) references clients(id) ON DELETE CASCADE,
 PRIMARY KEY (id)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
@@ -53,14 +55,15 @@ PRIMARY KEY (id),
 UNIQUE KEY name (name)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
-CREATE TABLE products (
+
+CREATE TABLE onlineshop.products (
 id INT NOT NULL AUTO_INCREMENT,
 name VARCHAR(250) NOT NULL,
 price INT NOT NULL,
 count INT DEFAULT 0,
+version INT DEFAULT 0,
 isDeleted boolean DEFAULT false,
-PRIMARY KEY (id),
-UNIQUE KEY name (name)
+PRIMARY KEY (id)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
 
 CREATE TABLE products_categories (
@@ -85,6 +88,4 @@ productId INT NOT NULL references products(id) ON DELETE CASCADE,
 count INT NOT NULL,
 UNIQUE KEY clientId_productId (clientId, productId)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;
-
-
 

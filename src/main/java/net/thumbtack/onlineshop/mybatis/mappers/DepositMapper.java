@@ -2,27 +2,24 @@ package net.thumbtack.onlineshop.mybatis.mappers;
 
 import net.thumbtack.onlineshop.model.Client;
 import net.thumbtack.onlineshop.model.Deposit;
-import net.thumbtack.onlineshop.model.User;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 public interface DepositMapper {
 
-    @Update("UPDATE deposits SET deposit = (deposit + #{money}) WHERE id = #{user.id} ")
-    void depositMoney(@Param("user") User user,
-                      @Param("money")Integer money);
+    @Insert(" INSERT INTO deposits (id) VALUES  (#{client.id})  ")
+    void addDeposit(@Param("client") Client client);
 
     @Select("SELECT * FROM deposits WHERE id = #{id}")
     Deposit getClientDeposit(@Param("id") Integer clientId);
 
+    @Update("UPDATE deposits SET deposit = (deposit + #{money}), version = version + 1 " +
+            "WHERE id = #{deposit.id} AND version = #{deposit.version} ")
+    int depositMoney(@Param("deposit") Deposit deposit,
+                      @Param("money") Integer money);
 
-    @Update("UPDATE deposits SET deposit = (deposit - #{money}) WHERE id = #{client.id} ")
-    void spendMoney(@Param("client") Client client,
-                    @Param("money") Integer money);
-
-    @Insert(" INSERT INTO deposits (id) VALUES  (#{client.id})  ")
-    void addDeposit(@Param("client") Client client);
+    @Update("UPDATE deposits SET deposit = (deposit - #{money}), version = (version+1)" +
+            " WHERE id = #{deposit.id} AND version = #{deposit.version}")
+    void chargeMoney(@Param("deposit") Deposit deposit,
+                     @Param("money") Integer money);
 
 }

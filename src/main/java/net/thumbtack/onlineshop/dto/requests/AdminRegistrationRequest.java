@@ -12,19 +12,25 @@ public class AdminRegistrationRequest {
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
+
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String lastName;
+
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String patronymic;
+
     @NotBlank
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String position;
+
     @NotBlank
+    @Pattern(regexp = "[A-Za-zА-Яа-я0-9]*")
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String login;
+
     @NotBlank
     @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
             max=OnlineShopServer.MAX_NAME_LENGTH)

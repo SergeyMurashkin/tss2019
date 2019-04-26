@@ -26,7 +26,6 @@ public class Client extends User {
         this.address = address;
         this.phone = phone;
         this.deposit = deposit;
-
     }
 
     public Client(String firstName,

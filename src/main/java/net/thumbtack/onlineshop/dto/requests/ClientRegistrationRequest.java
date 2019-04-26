@@ -13,7 +13,7 @@ import javax.validation.constraints.Size;
 public class ClientRegistrationRequest {
 
     @NotBlank
-    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
 
@@ -39,6 +39,7 @@ public class ClientRegistrationRequest {
     private String phone;
 
     @NotBlank
+    @Pattern(regexp = "[A-Za-zА-Яа-я0-9]*")
     @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String login;
 
@@ -124,7 +125,7 @@ public class ClientRegistrationRequest {
     }
 
     public void setLogin(String login) {
-        this.login = login;
+        this.login = login.trim();
     }
 
     public String getPassword() {
@@ -132,7 +133,7 @@ public class ClientRegistrationRequest {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.password = password.trim();
     }
 
 }

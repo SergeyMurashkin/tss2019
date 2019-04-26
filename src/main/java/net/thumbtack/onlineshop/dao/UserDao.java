@@ -1,33 +1,35 @@
 package net.thumbtack.onlineshop.dao;
 
-import net.thumbtack.onlineshop.model.OnlineShopException;
 import net.thumbtack.onlineshop.model.*;
 
 import java.util.List;
 
 public interface UserDao {
 
+    boolean isLoginExists(String login);
 
-    void registerAdmin(Admin admin, String cookie);
+    void registerAdmin(Admin admin);
 
+    void loginUser(String login, String password, String cookieValue);
 
-    void registerClient(Client client, String cookie);
+    void registerClient(Client client);
 
-    User loginUser(String login, String password, String cookie) throws OnlineShopException;
+    boolean isUserPasswordCorrect(String login, String password);
+
+    User getActualUser(String cookieValue);
+
+    Admin getAdmin(User user);
+
+    Client getClient(User user);
 
     void logoutUser(String cookieValue);
 
-    User getActualUser(String cookieValue) throws OnlineShopException;
+    List<Client> getAllClients();
 
-    List<Client> getAllClients(String cookieValue) throws OnlineShopException;
+    void editAdminProfile(Admin newAdmin);
 
-    User adminProfileEditing(Admin newAdmin, String cookieValue, String oldPassword) throws OnlineShopException;
+    void editClientProfile(Client client);
 
-    User clientProfileEditing(Client client, String cookieValue, String oldPassword) throws OnlineShopException;
-
-    Client depositMoney(String cookieValue, Integer money) throws OnlineShopException;
-
-    Client getMoney(String cookieValue) throws OnlineShopException;
-
+    void depositMoney(Deposit deposit, Integer money) throws OnlineShopException;
 
 }

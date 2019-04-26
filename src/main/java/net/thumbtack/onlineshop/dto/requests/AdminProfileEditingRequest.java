@@ -1,15 +1,39 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.model.Admin;
+import net.thumbtack.onlineshop.OnlineShopServer;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 public class AdminProfileEditingRequest {
 
-
+    @NotBlank
+    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String lastName;
+
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String patronymic;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String position;
+
+    @NotBlank
+    @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
+            max=OnlineShopServer.MAX_NAME_LENGTH)
     private String oldPassword;
+
+    @NotBlank
+    @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
+            max=OnlineShopServer.MAX_NAME_LENGTH)
     private String newPassword;
 
     public AdminProfileEditingRequest(){
@@ -35,7 +59,7 @@ public class AdminProfileEditingRequest {
     }
 
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+        this.firstName = firstName.trim();
     }
 
     public String getLastName() {
@@ -43,7 +67,7 @@ public class AdminProfileEditingRequest {
     }
 
     public void setLastName(String lastName) {
-        this.lastName = lastName;
+        this.lastName = lastName.trim();
     }
 
     public String getPatronymic() {
@@ -51,7 +75,9 @@ public class AdminProfileEditingRequest {
     }
 
     public void setPatronymic(String patronymic) {
-        this.patronymic = patronymic;
+        if(patronymic!=null){
+            this.patronymic = patronymic.trim();
+        }
     }
 
     public String getPosition() {
@@ -59,7 +85,7 @@ public class AdminProfileEditingRequest {
     }
 
     public void setPosition(String position) {
-        this.position = position;
+        this.position = position.trim();
     }
 
     public String getOldPassword() {
@@ -67,7 +93,7 @@ public class AdminProfileEditingRequest {
     }
 
     public void setOldPassword(String oldPassword) {
-        this.oldPassword = oldPassword;
+        this.oldPassword = oldPassword.trim();
     }
 
     public String getNewPassword() {
@@ -75,16 +101,7 @@ public class AdminProfileEditingRequest {
     }
 
     public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
+        this.newPassword = newPassword.trim();
     }
 
-    public Admin createNewUser() {
-        Admin admin = new Admin();
-        admin.setFirstName(firstName);
-        admin.setLastName(lastName);
-        admin.setPatronymic(patronymic);
-        admin.setPassword(newPassword);
-        admin.setPosition(position);
-        return admin;
-    }
 }

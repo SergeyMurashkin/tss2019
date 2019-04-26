@@ -1,12 +1,22 @@
 package net.thumbtack.onlineshop.dto.requests;
 
+import net.thumbtack.onlineshop.OnlineShopServer;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+
 public class PurchaseProductFromBasketRequest {
 
-
+    @Min(1)
     private int id;
+    @NotBlank
+    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
+    @Min(1)
     private int price;
-    private int count;
+    @Min(1)
+    private Integer count;
 
     public PurchaseProductFromBasketRequest(){
     }
@@ -35,11 +45,11 @@ public class PurchaseProductFromBasketRequest {
         this.price = price;
     }
 
-    public int getCount() {
+    public Integer getCount() {
         return count;
     }
 
-    public void setCount(int count) {
+    public void setCount(Integer count) {
         this.count = count;
     }
 

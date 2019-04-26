@@ -18,14 +18,16 @@ public class OnlineShopExceptionResponse {
     }
 
     public OnlineShopExceptionResponse(MethodArgumentNotValidException ex) {
-        errors = new ArrayList<>();
+        this.errors = new ArrayList<>();
         List<ObjectError> errors = ex.getBindingResult().getAllErrors();
+        int i=0;
         for (ObjectError error : errors) {
             String errorCode = error.getCode();
-            String field = ex.getBindingResult().getFieldError().getField();
+            String field = ex.getBindingResult().getFieldErrors().get(i).getField();
             String message = error.getDefaultMessage();
             ExceptionDTO exceptionDTO = new ExceptionDTO(errorCode, field, message);
             this.errors.add(exceptionDTO);
+            i++;
         }
     }
 
@@ -36,7 +38,7 @@ public class OnlineShopExceptionResponse {
     }
 
     public OnlineShopExceptionResponse(MySQLIntegrityConstraintViolationException ex) {
-        ExceptionDTO exceptionDTO = new ExceptionDTO();
+        ExceptionDTO exceptionDTO = new ExceptionDTO(ex);
         errors = new ArrayList<>();
         errors.add(exceptionDTO);
     }

@@ -1,24 +1,20 @@
-package net.thumbtack.onlineshop.dto.requests;
+package net.thumbtack.onlineshop.dto.responses;
 
-import net.thumbtack.onlineshop.OnlineShopServer;
+public class GetProductResponse {
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-
-public class PurchaseProductRequest {
-
-    @Min(1)
     private int id;
-    @NotBlank
-    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
-    @Min(1)
     private int price;
-    @Min(1)
-    private int count = 1;
+    private int count;
 
-    public PurchaseProductRequest(){
+    public GetProductResponse(){
+    }
+
+    public GetProductResponse(int id, String name, int price, int count){
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.count = count;
     }
 
     public int getId() {
@@ -34,7 +30,7 @@ public class PurchaseProductRequest {
     }
 
     public void setName(String name) {
-        this.name = name.trim();
+        this.name = name;
     }
 
     public int getPrice() {
@@ -52,5 +48,4 @@ public class PurchaseProductRequest {
     public void setCount(int count) {
         this.count = count;
     }
-
 }

@@ -1,366 +1,226 @@
 package net.thumbtack.onlineshop.controller;
 
+import net.thumbtack.onlineshop.OnlineShopServer;
 import net.thumbtack.onlineshop.TokenGenerator;
-import net.thumbtack.onlineshop.daoImpl.CategoryDaoImpl;
-import net.thumbtack.onlineshop.daoImpl.ProductDaoImpl;
-import net.thumbtack.onlineshop.daoImpl.PurchaseDaoImpl;
-import net.thumbtack.onlineshop.daoImpl.UserDaoImpl;
 import net.thumbtack.onlineshop.dto.requests.*;
-import net.thumbtack.onlineshop.dto.responses.AdminRegistrationResponse;
-import net.thumbtack.onlineshop.dto.responses.ClientRegistrationResponse;
-import net.thumbtack.onlineshop.dto.responses.ConsolidatedStatementResponse;
-import net.thumbtack.onlineshop.dto.responses.PurchaseProductFromBasketResponse;
-import net.thumbtack.onlineshop.model.*;
+import net.thumbtack.onlineshop.dto.responses.*;
+import net.thumbtack.onlineshop.model.OnlineShopException;
+import net.thumbtack.onlineshop.service.CategoryService;
+import net.thumbtack.onlineshop.service.ProductService;
+import net.thumbtack.onlineshop.service.PurchaseService;
+import net.thumbtack.onlineshop.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("api")
 public class RequestController {
 
+    private UserService userService = new UserService();
+    private CategoryService categoryService = new CategoryService();
+    private ProductService productService = new ProductService();
+    private PurchaseService purchaseService = new PurchaseService();
+
     private TokenGenerator tokenGenerator = new TokenGenerator();
-    private UserDaoImpl userDao = new UserDaoImpl();
-    private CategoryDaoImpl categoryDao = new CategoryDaoImpl();
-    private ProductDaoImpl productDao = new ProductDaoImpl();
-    private PurchaseDaoImpl purchaseDao = new PurchaseDaoImpl();
 
     @PostMapping("admins")
     public AdminRegistrationResponse adminRegistration(@Valid @RequestBody AdminRegistrationRequest request,
-                                                       HttpServletResponse response) {
-        Admin admin = new Admin(request.getFirstName(),
-                request.getLastName(),
-                request.getPatronymic(),
-                UserType.ADMIN.name(),
-                request.getLogin(),
-                request.getPassword(),
-                request.getPosition());
+                                                       HttpServletResponse httpResponse) throws OnlineShopException {
         String cookieValue = tokenGenerator.generateToken();
-        userDao.registerAdmin(admin, cookieValue);
-        Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
-        response.addCookie(cookie);
-        return new AdminRegistrationResponse(admin);
+        AdminRegistrationResponse response = userService.registerAdmin(request, cookieValue);
+        Cookie cookie = new Cookie(OnlineShopServer.COOKIE_JAVASESSIONID, cookieValue);
+        httpResponse.addCookie(cookie);
+        return response;
     }
 
     @PostMapping("clients")
     public ClientRegistrationResponse clientRegistration(@Valid @RequestBody ClientRegistrationRequest request,
-                                                         HttpServletResponse response) {
-        Client client = new Client(request.getFirstName(),
-                request.getLastName(),
-                request.getPatronymic(),
-                UserType.CLIENT.name(),
-                request.getLogin(),
-                request.getPassword(),
-                request.getEmail(),
-                request.getAddress(),
-                request.getPhone(),
-                new Deposit());
+                                                         HttpServletResponse httpResponse) throws OnlineShopException {
         String cookieValue = tokenGenerator.generateToken();
-        userDao.registerClient(client, cookieValue);
-        Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
-        response.addCookie(cookie);
-        return new ClientRegistrationResponse(client);
+        ClientRegistrationResponse response = userService.registerClient(request, cookieValue);
+        Cookie cookie = new Cookie(OnlineShopServer.COOKIE_JAVASESSIONID, cookieValue);
+        httpResponse.addCookie(cookie);
+        return response;
     }
 
     @PostMapping("sessions")
-    public <T> T loginUser(@RequestBody LoginUserRequest request,
-                           HttpServletResponse response) throws OnlineShopException {
-
+    public <T> T loginUser(@Valid @RequestBody LoginUserRequest request,
+                           HttpServletResponse httpResponse) throws OnlineShopException {
         String cookieValue = tokenGenerator.generateToken();
-        User user = userDao.loginUser(request.getLogin(), request.getPassword(), cookieValue);
-        if (user.getUserType().equals(UserType.ADMIN.name())) {
-            Admin admin = (Admin) user;
-            Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
-            response.addCookie(cookie);
-            return (T) new AdminRegistrationResponse(admin);
-        }
-        if (user.getUserType().equals(UserType.CLIENT.name())) {
-            Client client = (Client) user;
-            Cookie cookie = new Cookie("JAVASESSIONID", cookieValue);
-            response.addCookie(cookie);
-            return (T) new ClientRegistrationResponse(client);
-        } else {
-            return null;
-        }
-
+        T response = userService.loginUser(request, cookieValue);
+        Cookie cookie = new Cookie(OnlineShopServer.COOKIE_JAVASESSIONID, cookieValue);
+        httpResponse.addCookie(cookie);
+        return response;
     }
 
     @DeleteMapping("sessions")
-    public String logoutUser(@CookieValue("JAVASESSIONID") String cookieValue) {
-        userDao.logoutUser(cookieValue);
-        return "{}";
+    public String logoutUser(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) {
+        return userService.logoutUser(cookieValue);
     }
-
 
     @GetMapping("accounts")
-    public <T> T getActualUser(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        } else {
-            if (user.getUserType().equals(UserType.ADMIN.name())) {
-                Admin admin = (Admin) user;
-                return (T) new AdminRegistrationResponse(admin);
-            }
-            if (user.getUserType().equals(UserType.CLIENT.name())) {
-                Client client = (Client) user;
-                return (T) new ClientRegistrationResponse(client);
-            }
-        }
-        return (T) "{}";
+    public <T> T getActualUser(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+        return userService.getActualUser(cookieValue);
     }
 
-
     @GetMapping("clients")
-    public List<Client> getAllUsers(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
-        return userDao.getAllClients(cookieValue);
+    public List<GetAllUsersResponse> getAllUsers(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+        return userService.getAllClients(cookieValue);
     }
 
     @PutMapping("admins")
-    public AdminRegistrationResponse adminProfileEditing(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                         @RequestBody AdminProfileEditingRequest request) throws OnlineShopException {
-        Admin newAdmin = request.createNewUser();
-        Admin admin = userDao.adminProfileEditing(newAdmin, cookieValue, request.getOldPassword());
-        return new AdminRegistrationResponse(admin);
+    public AdminRegistrationResponse adminProfileEditing(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                         @Valid @RequestBody AdminProfileEditingRequest request) throws OnlineShopException {
+        return userService.editAdminProfile(request, cookieValue);
     }
 
     @PutMapping("clients")
-    public ClientRegistrationResponse clientProfileEditing(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                           @RequestBody ClientProfileEditingRequest request) throws OnlineShopException {
-        Client newClient = request.createNewClient();
-        Client client = userDao.clientProfileEditing(newClient, cookieValue, request.getOldPassword());
-        return new ClientRegistrationResponse(client);
+    public ClientRegistrationResponse editClientProfile(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                        @Valid @RequestBody ClientProfileEditingRequest request) throws OnlineShopException {
+        return userService.editClientProfile(request, cookieValue);
     }
 
-
     @PostMapping("categories")
-    public Category addCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                @RequestBody AddCategoryRequest request) throws OnlineShopException {
-        Category category = new Category(0, request.getName(), request.getParentId());
-        return categoryDao.addCategory(cookieValue, category);
+    public AddCategoryResponse addCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                           @Valid @RequestBody AddCategoryRequest request) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        return categoryService.addCategory(request);
     }
 
     @GetMapping("categories/{number}")
-    public Category getCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
-                    "number of category in address line",
-                    "Use numbers after {api/categories/} ");
-        }
-        return categoryDao.getCategory(cookieValue, id);
+    public AddCategoryResponse getCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                           @PathVariable(name = "number") String number) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        return categoryService.getCategory(number);
     }
 
     @PutMapping("categories/{number}")
-    public Category editCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @RequestBody AddCategoryRequest request,
-                                 @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
-                    "number of category in address line",
-                    "Use numbers after {api/categories/} ");
-        }
-        Category category = new Category(id, request.getName(), request.getParentId());
-        return categoryDao.editCategory(cookieValue, category);
+    public AddCategoryResponse editCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                            @Valid @RequestBody EditCategoryRequest request,
+                                            @PathVariable(name = "number") String number) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        return categoryService.editCategory(request, number);
     }
 
     @DeleteMapping("categories/{number}")
-    public String deleteCategory(@CookieValue("JAVASESSIONID") String cookieValue,
+    public String deleteCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                  @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
-                    "number of category in address line",
-                    "Use numbers after {api/categories/} ");
-        }
-        categoryDao.deleteCategory(cookieValue, id);
-        return "{}";
+        userService.checkAdminPermission(cookieValue);
+        return categoryService.deleteCategory(number);
     }
 
     @GetMapping("categories")
-    public List<Category> getAllCategories(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
-        return categoryDao.getAllCategories(cookieValue);
+    public List<AddCategoryResponse> getAllCategories(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        return categoryService.getAllCategories();
     }
 
     @PostMapping("products")
-    public Product addProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                              @RequestBody AddProductRequest request) throws OnlineShopException {
-        Product product = new Product(0, request.getName(), request.getPrice(), request.getCount(), new ArrayList<>());
-        productDao.addProduct(cookieValue, product, request.getCategoriesId());
-        return product;
+    public AddProductResponse addProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                         @Valid @RequestBody AddProductRequest request) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        categoryService.checkCategories(request.getCategoriesId());
+        return productService.addProduct(request);
     }
 
-
     @PutMapping("products/{number}")
-    public Product editProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                               @RequestBody EditProductRequest request,
-                               @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer productId;
-        try {
-            productId = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
-        Product product = new Product(productId, request.getName(), request.getPrice(), request.getCount(), new ArrayList<>());
-        productDao.editProduct(cookieValue, product, request.getCategoriesId());
-        return product;
+    public AddProductResponse editProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                          @Valid @RequestBody EditProductRequest request,
+                                          @PathVariable(name = "number") String number) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        categoryService.checkCategories(request.getCategoriesId());
+        return productService.editProduct(request, number);
     }
 
     @DeleteMapping("products/{number}")
-    public String  deleteProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
-        productDao.deleteProduct(cookieValue, id);
-        return "{}";
+    public String deleteProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                @PathVariable(name = "number") String number) throws OnlineShopException {
+        userService.checkAdminPermission(cookieValue);
+        return productService.deleteProduct(number);
     }
 
     @GetMapping("products/{number}")
-    public Product getProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                              @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
-        return productDao.getProduct(cookieValue, id);
+    public GetProductResponse getProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                         @PathVariable(name = "number") String number) throws OnlineShopException {
+        userService.checkAdminOrClientPermission(cookieValue);
+        return productService.getProduct(number);
     }
 
     @GetMapping("products")
-    public List<Product> getProductsByCategory(@CookieValue("JAVASESSIONID") String cookieValue,
-                                               @RequestParam(name = "category", required = false) List<Integer> categoriesId,
-                                               @RequestParam(name = "order", defaultValue = "product", required = false) String order) throws OnlineShopException {
-         return productDao.getProductsByCategory(cookieValue, categoriesId, order);
+    public List<GetProductResponse> getProductsByCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                          @RequestParam(name = "category", required = false) List<Integer> categoriesId,
+                                                          @RequestParam(name = "order", defaultValue = "product", required = false) String order) throws OnlineShopException {
+        userService.checkAdminOrClientPermission(cookieValue);
+        return productService.getProductsByCategory(categoriesId, order);
     }
 
     @PutMapping("deposits")
-    public ClientRegistrationResponse depositMoney(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                   @RequestBody DepositMoneyRequest deposit) throws OnlineShopException {
-        Integer money;
-        try {
-           money = Integer.valueOf(deposit.getDeposit());
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.DEPOSIT_INCORRECT_VALUE,
-                    "deposit",
-                    OnlineShopErrorCode.DEPOSIT_INCORRECT_VALUE.getErrorText());
-        }
-        Client client = userDao.depositMoney(cookieValue, money);
-        return new ClientRegistrationResponse(client);
+    public ClientRegistrationResponse depositMoney(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                   @RequestBody DepositMoneyRequest request) throws OnlineShopException {
+        return userService.depositMoney(request, cookieValue);
     }
 
     @GetMapping("deposits")
-    public ClientRegistrationResponse getMoney(@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
-        Client client = userDao.getMoney(cookieValue);
-        return new ClientRegistrationResponse(client);
+    public ClientRegistrationResponse getMoney(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+        return userService.getBalance(cookieValue);
     }
 
     @PostMapping("purchases")
-    public PurchaseProductRequest purchaseProduct(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                  @RequestBody PurchaseProductRequest request) throws OnlineShopException {
-        Purchase purchase = new Purchase(0,
-                0,
-                request.getId(),
-                request.getName(),
-                request.getPrice(),
-                request.getCount());
-        purchaseDao.purchaseProduct(cookieValue, purchase);
-        return request;
+    public PurchaseProductRequest purchaseProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                  @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        return purchaseService.purchaseProduct(request, cookieValue);
     }
 
-
     @PostMapping("baskets")
-    public List<Product> addProductInBasket(@CookieValue("JAVASESSIONID") String cookieValue,
-                                                  @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
-        Product basketProduct = new Product(
-                request.getId(),
-                request.getName(),
-                request.getPrice(),
-                request.getCount(),
-                new ArrayList<>());
-        return productDao.addProductInBasket(cookieValue, basketProduct);
+    public List<GetProductResponse> addProductInBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                       @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        return productService.addProductInBasket(request, cookieValue);
     }
 
     @DeleteMapping("baskets/{number}")
-    public String  deleteProductFromBasket(@CookieValue("JAVASESSIONID") String cookieValue,
-                                 @PathVariable(name = "number") String number) throws OnlineShopException {
-        Integer productId;
-        try {
-            productId = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/baskets/} ");
-        }
-        productDao.deleteProductFromBasket(cookieValue, productId);
-        return "{}";
+    public String deleteProductFromBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                          @PathVariable(name = "number") String number) throws OnlineShopException {
+        return productService.deleteProductFromBasket(number, cookieValue);
     }
 
     @PutMapping("baskets")
-    public List<Product> changeProductQuantity (@CookieValue("JAVASESSIONID") String cookieValue,
-                                         @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
-        Product newBasketProduct = new Product(
-                request.getId(),
-                request.getName(),
-                request.getPrice(),
-                request.getCount(),
-                new ArrayList<>());
-        return productDao.changeProductQuantity(cookieValue, newBasketProduct);
+    public List<GetProductResponse> changeBasketProductQuantity(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                          @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        return productService.changeBasketProductQuantity(request, cookieValue);
     }
 
     @GetMapping("baskets")
-    public List<Product> getClientBasket (@CookieValue("JAVASESSIONID") String cookieValue) throws OnlineShopException {
-        return productDao.getClientBasket(cookieValue);
+    public List<GetProductResponse> getClientBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+        return productService.getClientBasket(cookieValue);
     }
+
 
     @PostMapping("purchases/baskets")
-    public PurchaseProductFromBasketResponse purchaseProductsFromBasket(@CookieValue("JAVASESSIONID") String cookieValue,
+    public PurchaseProductFromBasketResponse purchaseProductsFromBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                                         @RequestBody List<PurchaseProductFromBasketRequest> requests) throws OnlineShopException {
-        List<Product> products = new ArrayList<>();
-        for (PurchaseProductFromBasketRequest request : requests) {
-            Product product = new Product(
-                    request.getId(),
-                    request.getName(),
-                    request.getPrice(),
-                    request.getCount(),
-                    null);
-            products.add(product);
-        }
-        return purchaseDao.purchaseProductsFromBasket(cookieValue, products);
+        return purchaseService.purchaseProductsFromBasket(requests, cookieValue);
     }
 
+
+
+
+
+
+
+
+
+///////////   for think ...
+
     @GetMapping("purchases")
-    public ConsolidatedStatementResponse getConsolidatedStatement(@CookieValue("JAVASESSIONID") String cookieValue,
+    public ConsolidatedStatementResponse getConsolidatedStatement(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                                   @RequestParam(name = "category", required = false) List<Integer> categoriesId,
                                                                   @RequestParam(name = "product", required = false) List<Integer> productsId,
                                                                   @RequestParam(name = "client", required = false) List<Integer> clientsId) throws OnlineShopException {
-        ConsolidatedStatementResponse response = purchaseDao.getConsolidatedStatement(categoriesId,productsId,clientsId);
-
-        return null;
+        return purchaseService.getConsolidatedStatement(categoriesId, productsId, clientsId, cookieValue);
     }
 
 

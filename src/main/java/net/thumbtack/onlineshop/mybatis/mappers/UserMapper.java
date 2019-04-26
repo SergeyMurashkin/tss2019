@@ -12,34 +12,39 @@ import java.util.List;
 
 public interface UserMapper {
 
+    @Select("SELECT IF( (SELECT login FROM users WHERE login = #{login}) IS NULL, false, true)")
+    boolean isLoginExists(@Param("login") String login);
+
     @Insert(" INSERT INTO users (firstName, lastName, patronymic, userType, login, password) VALUES " +
             " ( #{user.firstName}, #{user.lastName}, #{user.patronymic},  " +
             " #{user.userType}, #{user.login}, #{user.password} ) " )
     @Options(useGeneratedKeys = true, keyProperty = "user.id")
-    public void insertUser(@Param("user") User user);
+    void insertUser(@Param("user") User user);
 
     @Insert(" INSERT INTO admins (id, position) VALUES ( #{admin.id}, #{admin.position} ) " )
-    public void insertAdmin(@Param("admin") Admin admin);
+    void insertAdmin(@Param("admin") Admin admin);
+
+    @Insert(" INSERT INTO sessions (id, cookie) VALUES " +
+            " ( (SELECT id FROM users WHERE login = #{login} AND password = BINARY #{password} ), #{cookie} )" +
+            " ON DUPLICATE KEY UPDATE cookie = #{cookie} ")
+    void loginUser(@Param("login") String login,
+                   @Param("password") String password,
+                   @Param("cookie") String cookieValue);
 
     @Insert(" INSERT INTO clients (id, email, address, phone) VALUES " +
             " ( #{client.id}, #{client.email}, #{client.address}, #{client.phone}) " )
-    public void insertClient(@Param("client") Client client);
+    void insertClient(@Param("client") Client client);
 
-    @Insert(" INSERT INTO sessions (id, cookie) VALUES " +
-            " ( #{user.id}, #{cookie} ) ON DUPLICATE KEY UPDATE cookie = #{cookie} ")
-    public void loginUser(@Param("user") User user,
-                          @Param("cookie") String cookie);
+    @Select("SELECT IF( (SELECT login FROM users WHERE login = #{login} AND password = BINARY #{password} ) IS NULL, false, true)")
+    boolean isUserPasswordCorrect(@Param("login") String login,@Param("password") String password);
 
-    @Select("SELECT * FROM users WHERE (login = #{login} AND password = BINARY #{password} ) ")
-    User getUser(@Param("login") String login,
-                  @Param("password") String password);
+    @Select("SELECT * FROM users WHERE id = ( SELECT id FROM sessions WHERE (cookie = #{cookie}))")
+    User getActualUser(@Param("cookie") String cookie);
 
-    @Select("SELECT * FROM users INNER JOIN admins USING (id) WHERE (login = #{user.login}" +
-            " AND password = BINARY #{user.password} ) " )
+    @Select("SELECT * FROM users INNER JOIN admins USING (id) WHERE id = #{user.id} " )
     Admin getAdmin(@Param("user") User user);
 
-    @Select("SELECT * FROM users INNER JOIN clients USING (id) WHERE (login = #{user.login}" +
-            " AND password = BINARY #{user.password} ) " )
+    @Select("SELECT * FROM users INNER JOIN clients USING (id) WHERE id = #{user.id} " )
     @Results({
             @Result(property = "id", column = "id"),
             @Result(property = "deposit", column = "id", javaType = Deposit.class,
@@ -50,32 +55,34 @@ public interface UserMapper {
     @Delete(" DELETE FROM sessions WHERE cookie = #{cookieValue}" )
     void logoutUser(String cookieValue);
 
-    @Select("SELECT * FROM users WHERE id IN ( SELECT id FROM sessions WHERE (cookie = #{cookie}) )  " )
-    User getActualUser(@Param("cookie") String cookie);
-
     @Select("SELECT id, firstName, lastName, patronymic, userType, email, address, phone FROM users INNER JOIN clients USING (id)" )
     List<Client> getAllClients();
 
     @Update( " UPDATE users SET firstName = #{user.firstName}, lastName = #{user.lastName},  " +
-    " patronymic = #{user.patronymic}, password = #{user.password} WHERE id IN " +
-    " (SELECT id FROM sessions WHERE cookie = #{cookie}) AND password = #{oldPassword} ")
-    void userProfileEditing(@Param("user") User user,
-                             @Param("cookie") String cookie,
-                             @Param("oldPassword") String oldPassword);
+            " patronymic = #{user.patronymic}, password = #{user.password} WHERE id = #{user.id} ")
+    void userProfileEditing(@Param("user") User user);
 
-    @Update( " UPDATE admins SET position = #{admin.position} WHERE id IN " +
-            " (SELECT id FROM sessions WHERE cookie = #{cookie}) ")
-    void adminProfileEditing(@Param("admin") Admin admin,
-                            @Param("cookie") String cookie);
+    @Update( " UPDATE admins SET position = #{admin.position} WHERE id = #{admin.id} ")
+    void adminProfileEditing(@Param("admin") Admin admin);
 
     @Update("UPDATE clients SET email = #{client.email}, address = #{client.address}, phone = #{client.phone} " +
-            " WHERE id IN (SELECT id FROM sessions WHERE cookie = #{cookie}) ")
-    void clientProfileEditing(@Param("client") Client client,
-                              @Param("cookie") String cookieValue);
+            " WHERE id = #{client.id} ")
+    void clientProfileEditing(@Param("client") Client client);
 
 
 
 
-    @Select("SELECT login FROM users WHERE login = #{login}")
-    String isLoginExists(@Param("login") String login);
+
+
+
+
+
+
+
+
+
+
+    @Select("SELECT * FROM users WHERE (login = #{login} AND password = BINARY #{password} ) ")
+    User getUser(@Param("login") String login,
+                  @Param("password") String password);
 }

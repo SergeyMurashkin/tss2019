@@ -16,54 +16,13 @@ public class PurchaseDaoImpl extends DaoImplBase implements PurchaseDao {
     private static final Logger LOGGER = LoggerFactory.getLogger(PurchaseDaoImpl.class);
 
     @Override
-    public void purchaseProduct(String cookieValue, Purchase purchase) throws OnlineShopException {
+    public void purchaseProduct(Client client, Product product, Purchase purchase) {
         LOGGER.debug("DAO purchase Product {}");
-
         try (SqlSession sqlSession = getSession()) {
             try {
-                User user = getUserMapper(sqlSession).getActualUser(cookieValue);
-                if (user == null) {
-                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                            null,
-                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-                }
-                if (!user.getUserType().equals(UserType.CLIENT.name())) {
-                    throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                            null,
-                            OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-                }
-                Client client = getUserMapper(sqlSession).getClient(user);
-                purchase.setClientId(client.getId());
-                Product product = getProductMapper(sqlSession).getProduct(purchase.getProductId());
-                if (product == null) {
-                    throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                            "id",
-                            OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
-                }
-                if (!product.getName().equals(purchase.getName())) {
-                    throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_NAME,
-                            "name",
-                            OnlineShopErrorCode.PRODUCT_ANOTHER_NAME.getErrorText() + product.getName());
-                }
-                if (product.getPrice() != (purchase.getPrice())) {
-                    throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE,
-                            "price",
-                            OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE.getErrorText() + product.getPrice());
-                }
-                if (product.getCount() < purchase.getCount()) {
-                    throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_INSUFFICIENT_AMOUNT,
-                            "count",
-                            OnlineShopErrorCode.PRODUCT_INSUFFICIENT_AMOUNT.getErrorText() + product.getCount());
-                }
-                if (client.getDeposit().getDeposit() < (purchase.getCount() * purchase.getPrice())) {
-                    throw new OnlineShopException(OnlineShopErrorCode.DEPOSIT_INSUFFICIENT_AMOUNT,
-                            null,
-                            OnlineShopErrorCode.DEPOSIT_INSUFFICIENT_AMOUNT.getErrorText());
-                }
-
-                getPurchaseMapper(sqlSession).addPurchase(purchase);
-                getDepositMapper(sqlSession).spendMoney(client, purchase.getCount() * purchase.getPrice());
                 getProductMapper(sqlSession).reduceProductCount(product, purchase.getCount());
+                getDepositMapper(sqlSession).chargeMoney(client.getDeposit(), purchase.getCount() * purchase.getPrice());
+                getPurchaseMapper(sqlSession).addPurchase(purchase);
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't purchase Product. {}", ex);
                 sqlSession.rollback();
@@ -74,63 +33,33 @@ public class PurchaseDaoImpl extends DaoImplBase implements PurchaseDao {
     }
 
     @Override
-    public PurchaseProductFromBasketResponse purchaseProductsFromBasket(String cookieValue,
-                                                                        List<Product> products) throws OnlineShopException {
+    public List<Product> purchaseProductsFromBasket(Client client,
+                                                    List<Product> products,
+                                                    Integer totalCost)  {
         LOGGER.debug("DAO purchase basket products {}");
         List<Product> bought = new ArrayList<>();
-        List<Product> remaining;
         try (SqlSession sqlSession = getSession()) {
             try {
-                User user = getUserMapper(sqlSession).getActualUser(cookieValue);
-                if (user == null) {
-                    throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                            null,
-                            OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-                }
-                if (!user.getUserType().equals(UserType.CLIENT.name())) {
-                    throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                            null,
-                            OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-                }
-
-                List<Product> basketProducts = getBasketMapper(sqlSession).getClientBasket(user);
-                for (Product product : products) {
-                    int index = basketProducts.indexOf(product);
-                    if (index != -1) {
-                        Product basketProduct = basketProducts.get(index);
-                        if (product.getCount() == 0 || product.getCount() > basketProduct.getCount()) {
-                            product.setCount(basketProduct.getCount());
-                        }
-                        Product marketProduct = getProductMapper(sqlSession).getProduct(product.getId());
-                        if(product.equals(marketProduct) && marketProduct.getCount()>=product.getCount()){
-                            bought.add(product);
-                        }
-                    }
-                }
-
-                int totalCost=0;
-                for (Product boughtProduct : bought) {
-                    totalCost+=boughtProduct.getCount()*boughtProduct.getPrice();
-                }
-
-                Client client = getUserMapper(sqlSession).getClient(user);
-
-                if(totalCost<=client.getDeposit().getDeposit()){
-                    for (Product boughtProduct : bought){
+                if(totalCost<=client.getDeposit().getDeposit()) {
+                    for (Product boughtProduct : products) {
                         Purchase purchase = new Purchase(0,
                                 client.getId(),
                                 boughtProduct.getId(),
                                 boughtProduct.getName(),
                                 boughtProduct.getPrice(),
                                 boughtProduct.getCount());
-                        getPurchaseMapper(sqlSession).addPurchase(purchase);
-                        getProductMapper(sqlSession).reduceProductCount(boughtProduct,boughtProduct.getCount());
-                        getBasketMapper(sqlSession).deleteProductFromBasket(client.getId(),boughtProduct.getId());
+                        System.out.println(purchase);
+                        System.out.println(boughtProduct);
+
+                        if (getProductMapper(sqlSession).reduceProductCount(boughtProduct, boughtProduct.getCount()) == 1) {
+                            getBasketMapper(sqlSession).deleteProductFromBasket(client.getId(), boughtProduct.getId());
+                            getPurchaseMapper(sqlSession).addPurchase(purchase);
+                            bought.add(boughtProduct);
+                        } else {
+                            totalCost -= boughtProduct.getCount() * boughtProduct.getPrice();
+                        }
                     }
-                    getDepositMapper(sqlSession).spendMoney(client,totalCost);
-                    remaining = getBasketMapper(sqlSession).getClientBasket(client);
-                }else{
-                    remaining = getBasketMapper(sqlSession).getClientBasket(client);
+                    getDepositMapper(sqlSession).chargeMoney(client.getDeposit(), totalCost);
                 }
             } catch (RuntimeException ex) {
                 LOGGER.info("Can't purchase basket products. {}", ex);
@@ -139,8 +68,15 @@ public class PurchaseDaoImpl extends DaoImplBase implements PurchaseDao {
             }
             sqlSession.commit();
         }
-        return new PurchaseProductFromBasketResponse(bought,remaining);
+        return bought;
     }
+
+
+
+
+
+
+
 
     @Override
     public ConsolidatedStatementResponse getConsolidatedStatement(List<Integer> categoriesId,

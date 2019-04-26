@@ -1,16 +1,48 @@
 package net.thumbtack.onlineshop.dto.requests;
 
-import net.thumbtack.onlineshop.model.Client;
+import net.thumbtack.onlineshop.OnlineShopServer;
+
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 public class ClientProfileEditingRequest {
 
+    @NotBlank
+    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String firstName;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String lastName;
+
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Pattern(regexp = "[-А-Яа-я0-9 ]*")
     private String patronymic;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Email
     private String email;
+
+    @NotBlank
+    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
     private String address;
+
+    @Pattern(regexp = "(8|\\+7)(-?9)(-?[0-9]){9}")
     private String phone;
+
+    @NotBlank
+    @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
+            max=OnlineShopServer.MAX_NAME_LENGTH)
     private String oldPassword;
+
+    @NotBlank
+    @Size(min=OnlineShopServer.MIN_PASSWORD_LENGTH,
+            max=OnlineShopServer.MAX_NAME_LENGTH)
     private String newPassword;
 
     public ClientProfileEditingRequest(){
@@ -40,7 +72,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+        this.firstName = firstName.trim();
     }
 
     public String getLastName() {
@@ -48,7 +80,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setLastName(String lastName) {
-        this.lastName = lastName;
+        this.lastName = lastName.trim();
     }
 
     public String getPatronymic() {
@@ -56,7 +88,9 @@ public class ClientProfileEditingRequest {
     }
 
     public void setPatronymic(String patronymic) {
-        this.patronymic = patronymic;
+        if(patronymic!=null){
+            this.patronymic = patronymic.trim();
+        }
     }
 
     public String getEmail() {
@@ -64,7 +98,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email.trim();
     }
 
     public String getAddress() {
@@ -72,7 +106,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setAddress(String address) {
-        this.address = address;
+        this.address = address.trim();
     }
 
     public String getPhone() {
@@ -80,7 +114,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setPhone(String phone) {
-        this.phone = phone;
+        this.phone = phone.replace("-", "");
     }
 
     public String getOldPassword() {
@@ -88,7 +122,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setOldPassword(String oldPassword) {
-        this.oldPassword = oldPassword;
+        this.oldPassword = oldPassword.trim();
     }
 
     public String getNewPassword() {
@@ -96,18 +130,7 @@ public class ClientProfileEditingRequest {
     }
 
     public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
+        this.newPassword = newPassword.trim();
     }
 
-    public Client createNewClient() {
-        Client client = new Client();
-        client.setFirstName(firstName);
-        client.setLastName(lastName);
-        client.setPatronymic(patronymic);
-        client.setPassword(newPassword);
-        client.setEmail(email);
-        client.setAddress(address);
-        client.setPhone(phone);
-        return client;
-    }
 }

@@ -7,14 +7,17 @@ import java.util.List;
 
 public interface CategoryDao {
 
-    Category addCategory(String cookieValue, Category category) throws OnlineShopException;
+    boolean isCategoryNameExists(String name);
 
-    Category getCategory(String cookieValue, Integer id) throws OnlineShopException;
+    Category getCategory(Integer id);
 
-    Category editCategory(String cookieValue, Category category) throws OnlineShopException;
+    void addCategory(Category category);
 
-    void deleteCategory(String cookieValue, Integer id) throws OnlineShopException;
+    void editCategory(Category category);
 
-    List<Category> getAllCategories(String cookieValue) throws OnlineShopException;
+    void deleteCategory(Integer id);
 
+    List<Category> getAllCategories();
+
+    List<Integer> checkCategories(List<Integer> categoriesId);
 }

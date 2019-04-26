@@ -3,18 +3,15 @@ package net.thumbtack.onlineshop.dto.requests;
 import net.thumbtack.onlineshop.OnlineShopServer;
 
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
-public class AddCategoryRequest {
+public class EditCategoryRequest {
 
-    @NotBlank
-    @Size(max=OnlineShopServer.MAX_NAME_LENGTH)
+    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
 
     @Min(0)
     private Integer parentId;
-
 
     public String getName() {
         return name;
@@ -31,5 +28,6 @@ public class AddCategoryRequest {
     public void setParentId(Integer parentId) {
         this.parentId = parentId;
     }
+
 
 }
