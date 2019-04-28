@@ -22,6 +22,7 @@ public class UserService {
                     "Login",
                     OnlineShopErrorCode.USER_LOGIN_DUPLICATE.getErrorText());
         }
+        // REVU not transaction
         userDao.registerAdmin(admin);
         userDao.loginUser(admin.getLogin(), admin.getPassword(), cookieValue);
         return createAdminRegistrationResponse(admin);
@@ -34,6 +35,7 @@ public class UserService {
                     "Login",
                     OnlineShopErrorCode.USER_LOGIN_DUPLICATE.getErrorText());
         }
+        // REVU not transaction
         userDao.registerClient(client);
         userDao.loginUser(client.getLogin(), client.getPassword(), cookieValue);
         return createClientRegistrationResponse(client);
