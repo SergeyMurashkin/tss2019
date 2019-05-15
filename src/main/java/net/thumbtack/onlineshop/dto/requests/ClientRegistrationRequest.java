@@ -4,6 +4,7 @@ import net.thumbtack.onlineshop.OnlineShopServer;
 import net.thumbtack.onlineshop.model.Client;
 import net.thumbtack.onlineshop.model.Deposit;
 import net.thumbtack.onlineshop.model.UserType;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;

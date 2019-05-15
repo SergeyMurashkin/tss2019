@@ -13,6 +13,11 @@ public class EditCategoryRequest {
     @Min(0)
     private Integer parentId;
 
+    public EditCategoryRequest(String name, Integer parentId){
+        this.name = name;
+        this.parentId = parentId;
+    }
+
     public String getName() {
         return name;
     }
@@ -26,7 +31,7 @@ public class EditCategoryRequest {
     }
 
     public void setParentId(Integer parentId) {
-        this.parentId = parentId;
+        this.parentId = parentId==0?null:parentId;
     }
 
 

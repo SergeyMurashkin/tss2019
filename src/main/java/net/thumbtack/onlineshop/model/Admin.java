@@ -51,4 +51,22 @@ public class Admin extends User {
                 ", position='" + position + '\'' +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Admin admin = (Admin) o;
+
+        return getPosition() != null ? getPosition().equals(admin.getPosition()) : admin.getPosition() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (getPosition() != null ? getPosition().hashCode() : 0);
+        return result;
+    }
 }

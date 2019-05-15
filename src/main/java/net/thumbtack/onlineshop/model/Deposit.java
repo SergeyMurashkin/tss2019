@@ -38,4 +38,34 @@ public class Deposit {
     public void setVersion(Integer version) {
         this.version = version;
     }
+
+
+    @Override
+    public String toString() {
+        return "Deposit{" +
+                "id=" + id +
+                ", deposit=" + deposit +
+                ", version=" + version +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Deposit deposit1 = (Deposit) o;
+
+        if (id != deposit1.id) return false;
+        if (deposit != deposit1.deposit) return false;
+        return version != null ? version.equals(deposit1.version) : deposit1.version == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + deposit;
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        return result;
+    }
 }

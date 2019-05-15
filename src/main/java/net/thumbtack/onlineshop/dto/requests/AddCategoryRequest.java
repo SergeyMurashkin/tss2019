@@ -15,6 +15,14 @@ public class AddCategoryRequest {
     @Min(0)
     private Integer parentId;
 
+    public AddCategoryRequest() {
+    }
+
+    public AddCategoryRequest(String name, Integer parentId) {
+        this.name = name;
+        this.parentId = parentId;
+    }
+
 
     public String getName() {
         return name;
@@ -29,7 +37,7 @@ public class AddCategoryRequest {
     }
 
     public void setParentId(Integer parentId) {
-        this.parentId = parentId;
+        this.parentId = parentId==0?null:parentId;
     }
 
 }

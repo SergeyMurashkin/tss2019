@@ -6,21 +6,19 @@ import java.util.List;
 
 public interface UserDao {
 
-    boolean isLoginExists(String login);
+    void registerAdmin(Admin admin, String cookieValue) throws OnlineShopException;
 
-    void registerAdmin(Admin admin);
+    void loginUser(User user, String cookieValue);
 
-    void loginUser(String login, String password, String cookieValue);
+    void registerClient(Client client, String cookieValue) throws OnlineShopException;
 
-    void registerClient(Client client);
+    User getUserByLoginAndPassword(String login, String password) throws OnlineShopException;
 
-    boolean isUserPasswordCorrect(String login, String password);
+    User getActualUser(String cookieValue) throws OnlineShopException;
 
-    User getActualUser(String cookieValue);
+    Admin getAdmin(User user) throws OnlineShopException;
 
-    Admin getAdmin(User user);
-
-    Client getClient(User user);
+    Client getClient(User user) throws OnlineShopException;
 
     void logoutUser(String cookieValue);
 
@@ -32,4 +30,5 @@ public interface UserDao {
 
     void depositMoney(Deposit deposit, Integer money) throws OnlineShopException;
 
+    List<Integer> getAllClientsId();
 }

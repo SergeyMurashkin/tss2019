@@ -7,17 +7,15 @@ import java.util.List;
 
 public interface CategoryDao {
 
-    boolean isCategoryNameExists(String name);
+    Category getCategory(Integer id) throws OnlineShopException;
 
-    Category getCategory(Integer id);
+    void addCategory(Category category) throws OnlineShopException;
 
-    void addCategory(Category category);
-
-    void editCategory(Category category);
+    void editCategory(Category category) throws OnlineShopException;
 
     void deleteCategory(Integer id);
 
     List<Category> getAllCategories();
 
-    List<Integer> checkCategories(List<Integer> categoriesId);
+    List<Integer> getAllCategoriesAndSubCategoriesId();
 }

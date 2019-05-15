@@ -93,4 +93,30 @@ public class Client extends User {
                 ", deposit='" + deposit + '\'' +
                 '}';
     }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Client client = (Client) o;
+
+        if (getEmail() != null ? !getEmail().equals(client.getEmail()) : client.getEmail() != null) return false;
+        if (getAddress() != null ? !getAddress().equals(client.getAddress()) : client.getAddress() != null)
+            return false;
+        if (getPhone() != null ? !getPhone().equals(client.getPhone()) : client.getPhone() != null) return false;
+        return getDeposit() != null ? getDeposit().equals(client.getDeposit()) : client.getDeposit() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (getEmail() != null ? getEmail().hashCode() : 0);
+        result = 31 * result + (getAddress() != null ? getAddress().hashCode() : 0);
+        result = 31 * result + (getPhone() != null ? getPhone().hashCode() : 0);
+        result = 31 * result + (getDeposit() != null ? getDeposit().hashCode() : 0);
+        return result;
+    }
 }

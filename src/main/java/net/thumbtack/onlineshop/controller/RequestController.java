@@ -5,15 +5,13 @@ import net.thumbtack.onlineshop.TokenGenerator;
 import net.thumbtack.onlineshop.dto.requests.*;
 import net.thumbtack.onlineshop.dto.responses.*;
 import net.thumbtack.onlineshop.model.OnlineShopException;
-import net.thumbtack.onlineshop.service.CategoryService;
-import net.thumbtack.onlineshop.service.ProductService;
-import net.thumbtack.onlineshop.service.PurchaseService;
-import net.thumbtack.onlineshop.service.UserService;
+import net.thumbtack.onlineshop.service.*;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -23,7 +21,9 @@ public class RequestController {
     private UserService userService = new UserService();
     private CategoryService categoryService = new CategoryService();
     private ProductService productService = new ProductService();
+    private BasketService basketService = new BasketService();
     private PurchaseService purchaseService = new PurchaseService();
+    private CommonService commonService = new CommonService();
 
     private TokenGenerator tokenGenerator = new TokenGenerator();
 
@@ -73,8 +73,8 @@ public class RequestController {
     }
 
     @PutMapping("admins")
-    public AdminRegistrationResponse adminProfileEditing(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
-                                                         @Valid @RequestBody AdminProfileEditingRequest request) throws OnlineShopException {
+    public AdminRegistrationResponse editAdminProfile(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+                                                      @Valid @RequestBody AdminProfileEditingRequest request) throws OnlineShopException {
         return userService.editAdminProfile(request, cookieValue);
     }
 
@@ -87,75 +87,63 @@ public class RequestController {
     @PostMapping("categories")
     public AddCategoryResponse addCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                            @Valid @RequestBody AddCategoryRequest request) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return categoryService.addCategory(request);
+        return categoryService.addCategory(request, cookieValue);
     }
 
     @GetMapping("categories/{number}")
     public AddCategoryResponse getCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                            @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return categoryService.getCategory(number);
+        return categoryService.getCategory(number, cookieValue);
     }
 
     @PutMapping("categories/{number}")
     public AddCategoryResponse editCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                             @Valid @RequestBody EditCategoryRequest request,
                                             @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return categoryService.editCategory(request, number);
+        return categoryService.editCategory(request, number, cookieValue);
     }
 
     @DeleteMapping("categories/{number}")
     public String deleteCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                  @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return categoryService.deleteCategory(number);
+        return categoryService.deleteCategory(number, cookieValue);
     }
 
     @GetMapping("categories")
     public List<AddCategoryResponse> getAllCategories(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return categoryService.getAllCategories();
+        return categoryService.getAllCategories(cookieValue);
     }
 
     @PostMapping("products")
     public AddProductResponse addProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                          @Valid @RequestBody AddProductRequest request) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        categoryService.checkCategories(request.getCategoriesId());
-        return productService.addProduct(request);
+        return productService.addProduct(request, cookieValue);
     }
 
     @PutMapping("products/{number}")
     public AddProductResponse editProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                           @Valid @RequestBody EditProductRequest request,
                                           @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        categoryService.checkCategories(request.getCategoriesId());
-        return productService.editProduct(request, number);
+        return productService.editProduct(request, number, cookieValue);
     }
 
     @DeleteMapping("products/{number}")
     public String deleteProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                 @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminPermission(cookieValue);
-        return productService.deleteProduct(number);
+        return productService.deleteProduct(number, cookieValue);
     }
 
     @GetMapping("products/{number}")
     public GetProductResponse getProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                          @PathVariable(name = "number") String number) throws OnlineShopException {
-        userService.checkAdminOrClientPermission(cookieValue);
-        return productService.getProduct(number);
+        return productService.getProduct(number, cookieValue);
     }
 
     @GetMapping("products")
     public List<GetProductResponse> getProductsByCategory(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                           @RequestParam(name = "category", required = false) List<Integer> categoriesId,
                                                           @RequestParam(name = "order", defaultValue = "product", required = false) String order) throws OnlineShopException {
-        userService.checkAdminOrClientPermission(cookieValue);
-        return productService.getProductsByCategory(categoriesId, order);
+        return productService.getProductsByCategory(categoriesId, order, cookieValue);
     }
 
     @PutMapping("deposits")
@@ -165,12 +153,12 @@ public class RequestController {
     }
 
     @GetMapping("deposits")
-    public ClientRegistrationResponse getMoney(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
+    public ClientRegistrationResponse getBalance(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
         return userService.getBalance(cookieValue);
     }
 
     @PostMapping("purchases")
-    public PurchaseProductRequest purchaseProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
+    public PurchaseProductResponse purchaseProduct(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                   @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
         return purchaseService.purchaseProduct(request, cookieValue);
     }
@@ -178,24 +166,24 @@ public class RequestController {
     @PostMapping("baskets")
     public List<GetProductResponse> addProductInBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                        @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
-        return productService.addProductInBasket(request, cookieValue);
+        return basketService.addProductInBasket(request, cookieValue);
     }
 
     @DeleteMapping("baskets/{number}")
     public String deleteProductFromBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                           @PathVariable(name = "number") String number) throws OnlineShopException {
-        return productService.deleteProductFromBasket(number, cookieValue);
+        return basketService.deleteProductFromBasket(number, cookieValue);
     }
 
     @PutMapping("baskets")
     public List<GetProductResponse> changeBasketProductQuantity(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
-                                                          @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
-        return productService.changeBasketProductQuantity(request, cookieValue);
+                                                                @Valid @RequestBody PurchaseProductRequest request) throws OnlineShopException {
+        return basketService.changeBasketProductQuantity(request, cookieValue);
     }
 
     @GetMapping("baskets")
     public List<GetProductResponse> getClientBasket(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue) throws OnlineShopException {
-        return productService.getClientBasket(cookieValue);
+        return basketService.getClientBasket(cookieValue);
     }
 
 
@@ -205,24 +193,26 @@ public class RequestController {
         return purchaseService.purchaseProductsFromBasket(requests, cookieValue);
     }
 
-
-
-
-
-
-
-
-
-///////////   for think ...
-
     @GetMapping("purchases")
     public ConsolidatedStatementResponse getConsolidatedStatement(@CookieValue(OnlineShopServer.COOKIE_JAVASESSIONID) String cookieValue,
                                                                   @RequestParam(name = "category", required = false) List<Integer> categoriesId,
                                                                   @RequestParam(name = "product", required = false) List<Integer> productsId,
-                                                                  @RequestParam(name = "client", required = false) List<Integer> clientsId) throws OnlineShopException {
-        return purchaseService.getConsolidatedStatement(categoriesId, productsId, clientsId, cookieValue);
+                                                                  @RequestParam(name = "client", required = false) List<Integer> clientsId,
+                                                                  @RequestParam(name = "order", defaultValue = "category", required = false) String order) throws OnlineShopException {
+        return purchaseService.getConsolidatedStatement(categoriesId, productsId, clientsId, order, cookieValue);
     }
 
+
+    @GetMapping("settings")
+    public GetSettingsResponse getServerSettings() {
+        return commonService.getServerSettings();
+    }
+
+    @PostMapping("debug/clear")
+    public String clearDataBase() {
+        commonService.clearDataBase();
+        return "{}";
+    }
 
 }
 

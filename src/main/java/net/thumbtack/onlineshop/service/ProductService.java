@@ -19,221 +19,76 @@ public class ProductService {
     private ProductDao productDao = new ProductDaoImpl();
     private UserDao userDao = new UserDaoImpl();
 
-    public AddProductResponse addProduct(AddProductRequest request) {
+    public AddProductResponse addProduct(AddProductRequest request,
+                                         String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        userDao.getAdmin(user);
         Product product = createProduct(request);
         productDao.addProduct(product, request.getCategoriesId());
         Product addedProduct = productDao.getProduct(product.getId());
         return createAddProductResponse(addedProduct);
     }
 
-    public AddProductResponse editProduct(EditProductRequest request, String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
+    public AddProductResponse editProduct(EditProductRequest request,
+                                          String number,
+                                          String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        userDao.getAdmin(user);
+        Integer id = getProductIdFromAddressLine(number);
         Product oldProduct = productDao.getProduct(id);
-        if(oldProduct==null) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
-        }
-        Product newProduct = createProduct(id, request);
-        newProduct.setVersion(oldProduct.getVersion());
+        Product newProduct = createProduct(oldProduct, request);
         productDao.editProduct(newProduct, request.getCategoriesId());
         Product editedProduct = productDao.getProduct(id);
         return createAddProductResponse(editedProduct);
     }
 
-    public String deleteProduct(String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
+    public String deleteProduct(String number,
+                                String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        userDao.getAdmin(user);
+        Integer id = getProductIdFromAddressLine(number);
         productDao.deleteProduct(id);
         return "{}";
     }
 
-    public GetProductResponse getProduct(String number) throws OnlineShopException {
-        Integer id;
-        try {
-            id = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/products/} ");
-        }
+    public GetProductResponse getProduct(String number,
+                                         String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        checkAdminOrClientPermission(user);
+        Integer id = getProductIdFromAddressLine(number);
         Product product = productDao.getProduct(id);
-        if (product == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number in address line",
-                    OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
-
-        }
         return createGetProductResponse(product);
     }
 
-    public List<GetProductResponse> getProductsByCategory(List<Integer> categoriesId, String order) {
+    public List<GetProductResponse> getProductsByCategory(List<Integer> categoriesId,
+                                                          String order,
+                                                          String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        checkAdminOrClientPermission(user);
+        List<Product> products;
+        if (categoriesId == null) {
+            if (order.equals("category")) {
+                products = productDao.getAllProductsByCategoryOrder();
+            } else {
+                products = productDao.getAllProductsByProductOrder();
+            }
+        } else if (categoriesId.isEmpty()){
+            products = productDao.getProductsWithoutCategories();
+        } else {
+            if (order.equals("category")) {
+                products = productDao.getProductsByCategoryOrder(categoriesId);
+            } else {
+                products = productDao.getProductsByProductOrder(categoriesId);
+            }
+        }
         List<GetProductResponse> responses = new ArrayList<>();
-        List<Product> products = productDao.getProductsByCategory(categoriesId, order);
         for (Product product : products) {
             responses.add(createGetProductResponse(product));
         }
         return responses;
     }
 
-    public List<GetProductResponse> addProductInBasket(PurchaseProductRequest request, String cookieValue) throws OnlineShopException {
-
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client client = userDao.getClient(user);
-
-        Product productToBasket = createProduct(request);
-
-        if (productDao.checkIsProductInClientBasket(client, productToBasket)) {
-            throw new OnlineShopException(OnlineShopErrorCode.BASKET_PRODUCT_DUPLICATE,
-                    "id",
-                    OnlineShopErrorCode.BASKET_PRODUCT_DUPLICATE.getErrorText());
-        }
-
-        Product product = productDao.getProduct(productToBasket.getId());
-        if (product == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "id",
-                    OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
-        }
-        if (!product.getName().equals(productToBasket.getName())) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_NAME,
-                    "name",
-                    OnlineShopErrorCode.PRODUCT_ANOTHER_NAME.getErrorText() + product.getName());
-        }
-        if (product.getPrice() != (productToBasket.getPrice())) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE,
-                    "price",
-                    OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE.getErrorText() + product.getPrice());
-        }
-
-        productDao.addProductInBasket(client, productToBasket);
-
-        List<Product> basketProducts = productDao.getClientBasket(client);
-
-        List<GetProductResponse> responses = new ArrayList<>();
-        for (Product productFromBasket : basketProducts) {
-            responses.add(createGetProductResponse(productFromBasket));
-        }
-        return responses;
-    }
-
-    public String deleteProductFromBasket(String number, String cookieValue) throws OnlineShopException {
-        Integer productId;
-        try {
-            productId = Integer.valueOf(number);
-        } catch (NumberFormatException ex) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "number of product in address line",
-                    "Use numbers after {api/baskets/} ");
-        }
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client client = userDao.getClient(user);
-        productDao.deleteProductFromBasket(client, productId);
-        return "{}";
-    }
-
-    public List<GetProductResponse> getClientBasket(String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client client = userDao.getClient(user);
-        List<Product> basketProducts = productDao.getClientBasket(client);
-        List<GetProductResponse> responses = new ArrayList<>();
-        for (Product product : basketProducts) {
-            responses.add(createGetProductResponse(product));
-        }
-        return responses;
-    }
-
-    public List<GetProductResponse> changeBasketProductQuantity(PurchaseProductRequest request, String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client client = userDao.getClient(user);
-
-        Product newBasketProduct = createProduct(request);
-
-        if (!productDao.checkIsProductInClientBasket(client, newBasketProduct)) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_IN_BASKET,
-                    "id",
-                    OnlineShopErrorCode.PRODUCT_NOT_IN_BASKET.getErrorText());
-        }
-
-        Product product = productDao.getBasketProduct(client, newBasketProduct);
-        if (product == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
-                    "id",
-                    OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
-        }
-        if (!product.getName().equals(newBasketProduct.getName())) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_NAME,
-                    "name",
-                    OnlineShopErrorCode.PRODUCT_ANOTHER_NAME.getErrorText() + product.getName());
-        }
-        if (product.getPrice() != (newBasketProduct.getPrice())) {
-            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE,
-                    "price",
-                    OnlineShopErrorCode.PRODUCT_ANOTHER_PRICE.getErrorText() + product.getPrice());
-        }
-
-        List<Product> basketProducts = productDao.changeBasketProductQuantity(client, newBasketProduct);
-        List<GetProductResponse> responses = new ArrayList<>();
-        for (Product productFromBasket : basketProducts) {
-            responses.add(createGetProductResponse(productFromBasket));
-        }
-        return responses;
-    }
-
-    private Product createProduct(AddProductRequest request){
+    private Product createProduct(AddProductRequest request) {
         return new Product(0,
                 request.getName(),
                 request.getPrice(),
@@ -243,10 +98,9 @@ public class ProductService {
     }
 
 
-
     private AddProductResponse createAddProductResponse(Product product) {
         List<Integer> categoriesId = new ArrayList<>();
-        for (Category category: product.getCategories()) {
+        for (Category category : product.getCategories()) {
             categoriesId.add(category.getId());
         }
         return new AddProductResponse(
@@ -258,31 +112,54 @@ public class ProductService {
     }
 
 
-    private Product createProduct(Integer id, EditProductRequest request){
-        return new Product(id,
-                request.getName(),
-                request.getPrice(),
-                request.getCount(),
+    private Product createProduct(Product oldProduct, EditProductRequest request) {
+        return new Product(
+                oldProduct.getId(),
+                request.getName()==null?oldProduct.getName():request.getName(),
+                request.getPrice()==null?oldProduct.getPrice():request.getPrice(),
+                request.getCount()==null?oldProduct.getCount():request.getCount(),
                 new ArrayList<>(),
-                null);
+                oldProduct.getVersion());
     }
 
-    private Product createProduct(PurchaseProductRequest request){
-        return new Product(
-                request.getId(),
-                request.getName(),
-                request.getPrice(),
-                request.getCount(),
-                new ArrayList<>(),
-                null);
-    }
+
 
     private GetProductResponse createGetProductResponse(Product product) {
+        List<String> categoriesNames = new ArrayList<>();
+        for (Category category : product.getCategories()) {
+            categoriesNames.add(category.getName());
+        }
         return new GetProductResponse(
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
-                product.getCount());
+                product.getCount(),
+                categoriesNames);
     }
+
+    private Integer getProductIdFromAddressLine(String number) throws OnlineShopException {
+        Integer id;
+        try {
+            id = Integer.valueOf(number);
+        } catch (NumberFormatException ex) {
+            throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                    "number of product in address line",
+                    "Use numbers after {api/products/} ");
+        }
+        return id;
+    }
+
+    private void checkAdminOrClientPermission(User user) throws OnlineShopException {
+        if (!user.getUserType().equals(UserType.ADMIN.name()) && !user.getUserType().equals(UserType.CLIENT.name())) {
+            throw new OnlineShopException(OnlineShopErrorCode.USER_ACCESS_PERMISSION,
+                    null,
+                    OnlineShopErrorCode.USER_ACCESS_PERMISSION.getErrorText());
+        }
+    }
+
+
+
+
+
 
 }

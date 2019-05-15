@@ -11,7 +11,7 @@ public class PurchaseProductFromBasketRequest {
     @Min(1)
     private int id;
     @NotBlank
-    @Size(max= OnlineShopServer.MAX_NAME_LENGTH)
+    @Size(max = OnlineShopServer.MAX_NAME_LENGTH)
     private String name;
     @Min(1)
     private int price;
@@ -19,6 +19,13 @@ public class PurchaseProductFromBasketRequest {
     private Integer count;
 
     public PurchaseProductFromBasketRequest(){
+    }
+
+    public PurchaseProductFromBasketRequest(int id, String name, int price, Integer count){
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.count = count;
     }
 
     public int getId() {

@@ -90,9 +90,13 @@ public class Product {
 
         Product product = (Product) o;
 
-        if (id != product.id) return false;
-        if (price != product.price) return false;
-        return name != null ? name.equals(product.name) : product.name == null;
+        if (getId() != product.getId()) return false;
+        if (getPrice() != product.getPrice()) return false;
+        if (getCount() != product.getCount()) return false;
+        if (getName() != null ? !getName().equals(product.getName()) : product.getName() != null) return false;
+        if (getCategories() != null ? !getCategories().equals(product.getCategories()) : product.getCategories() != null)
+            return false;
+        return getVersion() != null ? getVersion().equals(product.getVersion()) : product.getVersion() == null;
     }
 
     @Override

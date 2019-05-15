@@ -37,13 +37,6 @@ public class OnlineShopExceptionResponse {
         errors.add(exceptionDTO);
     }
 
-    public OnlineShopExceptionResponse(MySQLIntegrityConstraintViolationException ex) {
-        ExceptionDTO exceptionDTO = new ExceptionDTO(ex);
-        errors = new ArrayList<>();
-        errors.add(exceptionDTO);
-    }
-
-
 
     public List<ExceptionDTO> getErrors() {
         return errors;

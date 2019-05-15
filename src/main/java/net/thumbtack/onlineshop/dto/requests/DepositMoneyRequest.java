@@ -4,6 +4,14 @@ public class DepositMoneyRequest {
 
     String deposit;
 
+    public DepositMoneyRequest() {
+
+    }
+
+    public DepositMoneyRequest(String deposit) {
+        this.deposit=deposit;
+    }
+
     public String getDeposit() {
         return deposit;
     }

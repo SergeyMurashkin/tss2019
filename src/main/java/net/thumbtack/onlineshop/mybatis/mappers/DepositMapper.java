@@ -19,7 +19,7 @@ public interface DepositMapper {
 
     @Update("UPDATE deposits SET deposit = (deposit - #{money}), version = (version+1)" +
             " WHERE id = #{deposit.id} AND version = #{deposit.version}")
-    void chargeMoney(@Param("deposit") Deposit deposit,
+    int chargeMoney(@Param("deposit") Deposit deposit,
                      @Param("money") Integer money);
 
 }

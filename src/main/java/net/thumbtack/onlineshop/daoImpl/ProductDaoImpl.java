@@ -2,28 +2,38 @@ package net.thumbtack.onlineshop.daoImpl;
 
 import net.thumbtack.onlineshop.dao.ProductDao;
 import net.thumbtack.onlineshop.model.*;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class ProductDaoImpl extends DaoImplBase implements ProductDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProductDaoImpl.class);
 
-    public void addProduct(Product product, List<Integer> categoriesId) {
+    public void addProduct(Product product, List<Integer> categoriesId) throws OnlineShopException {
         LOGGER.debug("DAO add Product {}", product);
         try (SqlSession sqlSession = getSession()) {
             try {
                 getProductMapper(sqlSession).addProduct(product);
-                if(!categoriesId.isEmpty()) {
-                    getProductMapper(sqlSession).addProductCategories(categoriesId, product);
+                if (categoriesId != null && !categoriesId.isEmpty()) {
+                    try {
+                        getProductMapper(sqlSession).addProductCategories(product, categoriesId);
+                    } catch (PersistenceException ex) {
+                        LOGGER.error("Can't add product categories. {}", ex);
+                        sqlSession.rollback();
+                        List<Integer> realCategoriesId = getCategoryMapper(sqlSession).getRealCategoriesId(categoriesId);
+                        categoriesId.removeAll(realCategoriesId);
+                        throw new OnlineShopException(
+                                OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
+                                "categoriesId",
+                                OnlineShopErrorCode.CATEGORY_NOT_EXISTS.getErrorText() + " Nonexistent categories: " + categoriesId);
+                    }
                 }
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't add Product. {}", ex);
+                LOGGER.error("Can't add Product. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -31,13 +41,19 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
         }
     }
 
-    public Product getProduct(Integer id){
+    public Product getProduct(Integer id) throws OnlineShopException {
         LOGGER.debug("DAO get Product with id {}", id);
         try (SqlSession sqlSession = getSession()) {
             try {
-                return getProductMapper(sqlSession).getProduct(id);
+                Product product = getProductMapper(sqlSession).getProduct(id);
+                if (product == null) {
+                    throw new OnlineShopException(OnlineShopErrorCode.PRODUCT_NOT_EXISTS,
+                            "number of product in address line",
+                            OnlineShopErrorCode.PRODUCT_NOT_EXISTS.getErrorText());
+                }
+                return product;
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't get Product. {}", ex);
+                LOGGER.error("Can't get Product. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -48,20 +64,34 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
         LOGGER.debug("DAO edit Product {}", product);
         try (SqlSession sqlSession = getSession()) {
             try {
-                if(getProductMapper(sqlSession).editProduct(product)==1) {
+                if (getProductMapper(sqlSession).editProduct(product) == 1) {
                     if (categoriesId != null) {
                         getProductMapper(sqlSession).deleteAllProductCategories(product);
                         if (!categoriesId.isEmpty()) {
-                            getProductMapper(sqlSession).addProductCategories(categoriesId, product);
+                            try {
+                                getProductMapper(sqlSession).addProductCategories(product, categoriesId);
+                            } catch (PersistenceException ex) {
+                                LOGGER.error("Can't add product categories. {}", ex);
+                                sqlSession.rollback();
+                                List<Integer> realCategoriesId = getCategoryMapper(sqlSession).getRealCategoriesId(categoriesId);
+                                categoriesId.removeAll(realCategoriesId);
+                                throw new OnlineShopException(
+                                        OnlineShopErrorCode.CATEGORY_NOT_EXISTS,
+                                        "categoriesId",
+                                        OnlineShopErrorCode.CATEGORY_NOT_EXISTS.getErrorText() + " Nonexistent categories: " + categoriesId);
+                            }
                         }
                     }
                 } else {
-                    throw new OnlineShopException(OnlineShopErrorCode.TRANSACTION_CONFLICT,
+                    LOGGER.error("Can't edit Product.");
+                    sqlSession.rollback();
+                    throw new OnlineShopException(
+                            OnlineShopErrorCode.PRODUCT_STATE_CHANGING,
                             null,
-                            OnlineShopErrorCode.TRANSACTION_CONFLICT.getErrorText());
+                            OnlineShopErrorCode.PRODUCT_STATE_CHANGING.getErrorText());
                 }
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't edit Product. {}", ex);
+                LOGGER.error("Can't edit Product. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -75,7 +105,7 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
             try {
                 getProductMapper(sqlSession).deleteProduct(id);
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't delete Product. {}", ex);
+                LOGGER.error("Can't delete Product. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -84,72 +114,37 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
     }
 
     @Override
-    public List<Product> getProductsByCategory(List<Integer> categoriesId, String order) {
+    public List<Product> getAllProductsByProductOrder() {
         LOGGER.debug("DAO get Products");
-        List<Product> products = new ArrayList<>();
         try (SqlSession sqlSession = getSession()) {
             try {
-                if (categoriesId == null) {
-                    if (order.equals("product")) {
-                        return getProductMapper(sqlSession).getAllProductsByProductOrder();
+                return getProductMapper(sqlSession).getAllProductsByProductOrder();
+            } catch (RuntimeException ex) {
+                LOGGER.error("Can't get Products. {}", ex);
+                sqlSession.rollback();
+                throw ex;
+            }
+        }
+    }
+
+    @Override
+    public List<Product> getAllProductsByCategoryOrder() {
+        LOGGER.debug("DAO get Products");
+        try (SqlSession sqlSession = getSession()) {
+            try {
+                List<Product> products = new ArrayList<>(getProductMapper(sqlSession).getProductsWithoutCategories());
+                List<Category> allProductCategoriesSortedByName =
+                        getCategoryMapper(sqlSession).getAllCategoriesAndSubCategoriesSortedByName();
+                for (Category category : allProductCategoriesSortedByName) {
+                    List<Product> categoryProducts = getProductMapper(sqlSession).getProductsByCategory(category.getId());
+                    for(Product product : categoryProducts){
+                        product.setCategories(Collections.singletonList(category));
                     }
-                    if (order.equals("category")) {
-                        List<Category> allCategories = getCategoryMapper(sqlSession).getAllCategories();
-                        List<Category> allCategoriesSortedByName = new ArrayList<>();
-                        allCategories.stream().sorted(Comparator.comparing(Category::getName)).forEach(allCategoriesSortedByName::add);
-                        products.addAll(getProductMapper(sqlSession).getProductsWithoutCategories());
-                        for (Category category : allCategoriesSortedByName) {
-                            List<Product> categoryProducts = getProductMapper(sqlSession).getProductsByCategory(category.getId());
-                            for (Product product : categoryProducts) {
-                                product.setCategories(new ArrayList<>());
-                                product.getCategories().add(category);
-                            }
-                            products.addAll(categoryProducts);
-                        }
-                        return products;
-                    }
-                } else {
-                    if (categoriesId.size() == 0) {
-                        return getProductMapper(sqlSession).getProductsWithoutCategories();
-                    } else {
-                        if (order.equals("product")) {
-                            return getProductMapper(sqlSession).getProductsByCategoriesByProductOrder(categoriesId);
-                        }
-                        if (order.equals("category")) {
-                            List<Category> categories = getCategoryMapper(sqlSession).getCategories(categoriesId);
-                            List<Category> categoriesSortedByName = new ArrayList<>();
-                            categories.stream().sorted(Comparator.comparing(Category::getName)).forEach(categoriesSortedByName::add);
-                            for (Category category : categoriesSortedByName) {
-                                List<Product> categoryProducts = getProductMapper(sqlSession).getProductsByCategory(category.getId());
-                                for (Product product : categoryProducts) {
-                                    product.setCategories(new ArrayList<>());
-                                    product.getCategories().add(category);
-                                }
-                                products.addAll(categoryProducts);
-                            }
-                            return products;
-                        }
-                    }
+                    products.addAll(categoryProducts);
                 }
+                return products;
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't get Products. {}", ex);
-                sqlSession.rollback();
-                throw ex;
-            }
-
-
-        }
-        return products;
-    }
-
-    @Override
-    public boolean checkIsProductInClientBasket(Client client, Product productToBasket) {
-        LOGGER.debug("DAO add Product {} in basket", productToBasket);
-        try (SqlSession sqlSession = getSession()) {
-            try {
-                return getBasketMapper(sqlSession).checkIsProductInClientBasket(client, productToBasket);
-            } catch (RuntimeException ex) {
-                LOGGER.info("Can't add Product. {}", ex);
+                LOGGER.error("Can't get Products. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -157,27 +152,13 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
     }
 
     @Override
-    public void addProductInBasket(Client client, Product productToBasket) {
-        LOGGER.debug("DAO add Product {} in basket", productToBasket);
+    public List<Product> getProductsWithoutCategories() {
+        LOGGER.debug("DAO get Products");
         try (SqlSession sqlSession = getSession()) {
             try {
-                getBasketMapper(sqlSession).addProductInBasket(client, productToBasket);
+                return getProductMapper(sqlSession).getProductsWithoutCategories();
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't add Product. {}", ex);
-                sqlSession.rollback();
-                throw ex;
-            }
-            sqlSession.commit();
-        }
-    }
-
-    public List<Product> getClientBasket(Client client) {
-        LOGGER.debug("DAO get client basket.");
-        try (SqlSession sqlSession = getSession()) {
-            try {
-                return getBasketMapper(sqlSession).getClientBasket(client);
-            } catch (RuntimeException ex) {
-                LOGGER.info("Can't get client basket. {}", ex);
+                LOGGER.error("Can't get Products. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
@@ -185,50 +166,84 @@ public class ProductDaoImpl extends DaoImplBase implements ProductDao {
     }
 
     @Override
-    public Product getBasketProduct(Client client, Product product) {
-        LOGGER.debug("DAO get client basket product.");
+    public List<Product> getProductsByCategoryOrder(List<Integer> categoriesId) {
+        LOGGER.debug("DAO get Products");
         try (SqlSession sqlSession = getSession()) {
             try {
-                return getBasketMapper(sqlSession).getBasketProduct(client, product);
+                List<Product> products = new ArrayList<>();
+                List<Category> categoriesSortedByName = getCategoryMapper(sqlSession).getCategories(categoriesId);
+                for (Category category : categoriesSortedByName) {
+                    List<Product> categoryProducts = getProductMapper(sqlSession).getProductsByCategory(category.getId());
+                    for(Product product : categoryProducts){
+                        product.setCategories(Collections.singletonList(category));
+                    }
+                    products.addAll(categoryProducts);
+                }
+                return products;
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't get client basket product. {}", ex);
+                LOGGER.error("Can't get Products. {}", ex);
+                sqlSession.rollback();
+                throw ex;
+            }
+        }
+
+    }
+
+    @Override
+    public List<Product> getProductsByProductOrder(List<Integer> categoriesId) {
+        LOGGER.debug("DAO get Products");
+        try (SqlSession sqlSession = getSession()) {
+            try {
+                return getProductMapper(sqlSession).getProductsByCategoriesByProductOrder(categoriesId);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Can't get Products. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
         }
     }
 
-    public void deleteProductFromBasket(Client client, Integer productId){
-        LOGGER.debug("DAO delete Product from Basket with productId {}", productId);
+    @Override
+    public List<Integer> getAllProductsId() {
+        LOGGER.debug("DAO get all products Id.");
         try (SqlSession sqlSession = getSession()) {
             try {
-                getBasketMapper(sqlSession).deleteProductFromBasket(client.getId(), productId);
+                return getProductMapper(sqlSession).getAllProductsId();
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't delete Product. {}", ex);
+                LOGGER.error("Can't get all products Id. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
-            sqlSession.commit();
         }
     }
 
-    public List<Product> changeBasketProductQuantity(Client client, Product newBasketProduct) {
-        LOGGER.debug("DAO change product quantity {}", newBasketProduct);
-        List<Product> basketProducts;
+    @Override
+    public List<Integer> getProductsIdByCategories(List<Integer> categoriesId) {
+        LOGGER.debug("DAO get all products Id.");
         try (SqlSession sqlSession = getSession()) {
             try {
-                getBasketMapper(sqlSession).changeProductQuantity(client, newBasketProduct);
-                basketProducts = getBasketMapper(sqlSession).getClientBasket(client);
+                return getProductMapper(sqlSession).getProductsIdByCategories(categoriesId);
             } catch (RuntimeException ex) {
-                LOGGER.info("Can't change product quantity. {}", ex);
+                LOGGER.error("Can't get all products Id. {}", ex);
                 sqlSession.rollback();
                 throw ex;
             }
-            sqlSession.commit();
         }
-        return basketProducts;
     }
 
+    @Override
+    public List<Integer> getProductsIdByCategoriesAndWithout(List<Integer> categoriesId) {
+        LOGGER.debug("DAO get all products Id.");
+        try (SqlSession sqlSession = getSession()) {
+            try {
+                return getProductMapper(sqlSession).getProductsIdByCategoriesAndWithout(categoriesId);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Can't get all products Id. {}", ex);
+                sqlSession.rollback();
+                throw ex;
+            }
+        }
+    }
 
 
 }

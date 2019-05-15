@@ -19,21 +19,6 @@ public class Category {
         this.parentId = parentId;
     }
 
-    public Category(int id, String name, List<Category> childCategories){
-        this.id = id;
-        this.name = name;
-        this.childCategories = childCategories;
-    }
-
-    public Category(int id, String name, Integer parentId, String parentName, List<Category> childCategories){
-        this.id = id;
-        this.name = name;
-        this.parentId = parentId;
-        this.parentName = parentName;
-        this.childCategories = childCategories;
-    }
-
-
     public int getId() {
         return id;
     }
@@ -83,5 +68,31 @@ public class Category {
                 ", parentName='" + parentName + '\'' +
                 ", childCategories=" + childCategories +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Category category = (Category) o;
+
+        if (getId() != category.getId()) return false;
+        if (getName() != null ? !getName().equals(category.getName()) : category.getName() != null) return false;
+        if (getParentId() != null ? !getParentId().equals(category.getParentId()) : category.getParentId() != null)
+            return false;
+        if (getParentName() != null ? !getParentName().equals(category.getParentName()) : category.getParentName() != null)
+            return false;
+        return getChildCategories() != null ? getChildCategories().equals(category.getChildCategories()) : category.getChildCategories() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getId();
+        result = 31 * result + (getName() != null ? getName().hashCode() : 0);
+        result = 31 * result + (getParentId() != null ? getParentId().hashCode() : 0);
+        result = 31 * result + (getParentName() != null ? getParentName().hashCode() : 0);
+        result = 31 * result + (getChildCategories() != null ? getChildCategories().hashCode() : 0);
+        return result;
     }
 }

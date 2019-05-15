@@ -60,4 +60,8 @@ public class AddProductResponse {
     public void setCategories(List<Integer> categories) {
         this.categories = categories;
     }
+
+
+
+
 }

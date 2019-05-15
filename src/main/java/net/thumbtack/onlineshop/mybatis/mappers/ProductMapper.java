@@ -5,6 +5,7 @@ import net.thumbtack.onlineshop.model.Product;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.mapping.FetchType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public interface ProductMapper {
@@ -19,11 +20,11 @@ public interface ProductMapper {
             "  #{product.id}, #{item} ",
             "</foreach>",
             "</script>" })
-    void addProductCategories(@Param("list") List<Integer> categoriesId,
-                              @Param("product") Product product);
+    void addProductCategories(@Param("product") Product product,
+                              @Param("list") List<Integer> categoriesId);
 
-    @Update("UPDATE products SET name = IFNULL(#{product.name}, name), price = IFNULL(#{product.price}, price), " +
-            "count = IFNULL(#{product.count}, count), version = (version+1) WHERE id = #{product.id} AND version = #{product.version}")
+    @Update("UPDATE products SET name = #{product.name}, price = #{product.price}, count = #{product.count}," +
+            " version = (version+1) WHERE id = #{product.id} AND version = #{product.version}")
     int editProduct(@Param("product") Product product);
 
     @Delete("DELETE FROM products_categories WHERE productId = #{product.id} ")
@@ -40,7 +41,7 @@ public interface ProductMapper {
     })
     Product getProduct(@Param("id") Integer id);
 
-    @Select("SELECT * FROM categories WHERE id IN " +
+    @Select("SELECT id,name FROM categories WHERE id IN " +
             "(SELECT categoryId FROM products_categories WHERE productId = #{id})  ORDER BY name ")
     List<Category> getProductCategories(@Param("id") Integer productId);
 
@@ -54,6 +55,11 @@ public interface ProductMapper {
 
     @Select("SELECT * FROM products WHERE id NOT IN (SELECT productId FROM products_categories) " +
             " AND isDeleted = false ORDER BY name")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "categories", column = "id", javaType = List.class,
+                    one = @One(select = "net.thumbtack.onlineshop.mybatis.mappers.ProductMapper.getProductCategories", fetchType = FetchType.EAGER))
+    })
     List<Product> getProductsWithoutCategories();
 
     @Select("SELECT * FROM products WHERE id IN ( SELECT productId FROM products_categories WHERE categoryId = #{id}) " +
@@ -79,4 +85,27 @@ public interface ProductMapper {
     int reduceProductCount(@Param("product") Product product,
                             @Param("soldCount") Integer soldCount);
 
+
+    @Delete("DELETE FROM products")
+    void deleteAllProducts();
+
+    @Select("SELECT id FROM products")
+    List<Integer> getAllProductsId();
+
+    @Select( {"<script>",
+            "SELECT productId FROM products_categories WHERE categoryId IN ",
+            "<foreach  item='item' collection='list' open='(' separator=',' close=')' >",
+            " #{item} ",
+            "</foreach>",
+            "</script>" })
+    List<Integer> getProductsIdByCategories(@Param("list") List<Integer> categoriesId);
+
+    @Select( {"<script>",
+            "SELECT id FROM products WHERE id IN ( SELECT productId FROM products_categories WHERE categoryId IN ",
+            "<foreach  item='item' collection='list' open='(' separator=',' close=')' >",
+            " #{item} ",
+            "</foreach>",
+            " ) OR id NOT IN (SELECT productId FROM products_categories) ",
+            "</script>" })
+    List<Integer> getProductsIdByCategoriesAndWithout(List<Integer> categoriesId);
 }

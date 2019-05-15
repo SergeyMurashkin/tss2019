@@ -15,44 +15,26 @@ public class UserService {
 
     private UserDao userDao = new UserDaoImpl();
 
-    public AdminRegistrationResponse registerAdmin(AdminRegistrationRequest request, String cookieValue) throws OnlineShopException {
+    public AdminRegistrationResponse registerAdmin(AdminRegistrationRequest request,
+                                                   String cookieValue) throws OnlineShopException {
         Admin admin = createAdmin(request);
-        if (userDao.isLoginExists(admin.getLogin())){
-            throw new OnlineShopException(OnlineShopErrorCode.USER_LOGIN_DUPLICATE,
-                    "Login",
-                    OnlineShopErrorCode.USER_LOGIN_DUPLICATE.getErrorText());
-        }
-        // REVU not transaction
-        userDao.registerAdmin(admin);
-        userDao.loginUser(admin.getLogin(), admin.getPassword(), cookieValue);
-        return createAdminRegistrationResponse(admin);
+        userDao.registerAdmin(admin, cookieValue);
+        Admin registeredAdmin = userDao.getAdmin(admin);
+        return createAdminRegistrationResponse(registeredAdmin);
     }
 
-    public ClientRegistrationResponse registerClient(ClientRegistrationRequest request, String cookieValue) throws OnlineShopException {
+    public ClientRegistrationResponse registerClient(ClientRegistrationRequest request,
+                                                     String cookieValue) throws OnlineShopException {
         Client client = createClient(request);
-        if (userDao.isLoginExists(client.getLogin())){
-            throw new OnlineShopException(OnlineShopErrorCode.USER_LOGIN_DUPLICATE,
-                    "Login",
-                    OnlineShopErrorCode.USER_LOGIN_DUPLICATE.getErrorText());
-        }
-        // REVU not transaction
-        userDao.registerClient(client);
-        userDao.loginUser(client.getLogin(), client.getPassword(), cookieValue);
-        return createClientRegistrationResponse(client);
+        userDao.registerClient(client, cookieValue);
+        Client registeredClient = userDao.getClient(client);
+        return createClientRegistrationResponse(registeredClient);
     }
 
-    public <T> T loginUser(LoginUserRequest request, String cookieValue) throws OnlineShopException {
-        if(!userDao.isLoginExists(request.getLogin())){
-            throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_LOGIN,
-                    "Login",
-                    OnlineShopErrorCode.USER_WRONG_LOGIN.getErrorText());
-        }
-        if(!userDao.isUserPasswordCorrect(request.getLogin(), request.getPassword())){
-            throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
-                    "Password",
-                    OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
-        }
-        userDao.loginUser(request.getLogin(), request.getPassword(), cookieValue);
+    public <T> T loginUser(LoginUserRequest request,
+                           String cookieValue) throws OnlineShopException {
+        User user = userDao.getUserByLoginAndPassword(request.getLogin(), request.getPassword());
+        userDao.loginUser(user, cookieValue);
         return getActualUser(cookieValue);
     }
 
@@ -63,24 +45,18 @@ public class UserService {
 
     public <T> T getActualUser(String cookieValue) throws OnlineShopException {
         User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        } else {
-            if (user.getUserType().equals(UserType.ADMIN.name())) {
-                Admin admin = userDao.getAdmin(user);
-                return (T) createAdminRegistrationResponse(admin);
-            }
-            if (user.getUserType().equals(UserType.CLIENT.name())) {
-                Client client = userDao.getClient(user);
-                return (T) createClientRegistrationResponse(client);
-            }
-            throw new OnlineShopException(OnlineShopErrorCode.USER_ACCESS_PERMISSION,
-                    null,
-                    OnlineShopErrorCode.USER_ACCESS_PERMISSION.getErrorText());
+        if (user.getUserType().equals(UserType.ADMIN.name())) {
+            return (T) createAdminRegistrationResponse(userDao.getAdmin(user));
         }
+        if (user.getUserType().equals(UserType.CLIENT.name())) {
+            return (T) createClientRegistrationResponse(userDao.getClient(user));
+        }
+        throw new OnlineShopException(OnlineShopErrorCode.USER_ACCESS_PERMISSION,
+                null,
+                OnlineShopErrorCode.USER_ACCESS_PERMISSION.getErrorText());
+
     }
+
 
     private Admin createAdmin(AdminRegistrationRequest request) {
         return new Admin(request.getFirstName(),
@@ -129,7 +105,7 @@ public class UserService {
                 request.getLastName(),
                 request.getPatronymic(),
                 UserType.ADMIN.name(),
-                "",
+                null,
                 request.getNewPassword(),
                 request.getPosition());
     }
@@ -139,16 +115,17 @@ public class UserService {
                 request.getLastName(),
                 request.getPatronymic(),
                 UserType.CLIENT.name(),
-                "",
+                null,
                 request.getNewPassword(),
                 request.getEmail(),
                 request.getAddress(),
                 request.getPhone(),
-                new Deposit());
+                null);
     }
 
     public List<GetAllUsersResponse> getAllClients(String cookieValue) throws OnlineShopException {
-        checkAdminPermission(cookieValue);
+        User user = userDao.getActualUser(cookieValue);
+        userDao.getAdmin(user);
         List<GetAllUsersResponse> responses = new ArrayList<>();
         List<Client> clients = userDao.getAllClients();
         for (Client client : clients) {
@@ -167,55 +144,67 @@ public class UserService {
                 client.getPhone());
     }
 
-    public AdminRegistrationResponse editAdminProfile(AdminProfileEditingRequest request, String cookieValue) throws OnlineShopException {
+    public AdminRegistrationResponse editAdminProfile(AdminProfileEditingRequest request,
+                                                      String cookieValue) throws OnlineShopException {
         User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getPassword().equals(request.getOldPassword())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
-                    "Old password",
-                    OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.ADMIN.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_ADMIN,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_ADMIN.getErrorText());
-        }
+        Admin admin = userDao.getAdmin(user);
+        checkUserOldPasswordCorrectness(admin,request);
         Admin newAdmin = createAdmin(request);
-        newAdmin.setId(user.getId());
+        newAdmin.setId(admin.getId());
         userDao.editAdminProfile(newAdmin);
-        Admin admin = userDao.getAdmin(newAdmin);
+        admin = userDao.getAdmin(newAdmin);
         return createAdminRegistrationResponse(admin);
     }
 
-    public ClientRegistrationResponse editClientProfile(ClientProfileEditingRequest request, String cookieValue) throws OnlineShopException {
+    public ClientRegistrationResponse editClientProfile(ClientProfileEditingRequest request,
+                                                        String cookieValue) throws OnlineShopException {
         User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
+        Client client = userDao.getClient(user);
+        checkUserOldPasswordCorrectness(client, request);
+        Client newClient = createClient(request);
+        newClient.setId(user.getId());
+        userDao.editClientProfile(newClient);
+        client = userDao.getClient(newClient);
+        return createClientRegistrationResponse(client);
+    }
+
+     public ClientRegistrationResponse depositMoney(DepositMoneyRequest request,
+                                                   String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        Client beforeClient = userDao.getClient(user);
+        Integer additionalDeposit = getDepositFromRequest(request);
+        userDao.depositMoney(beforeClient.getDeposit(), additionalDeposit);
+        Client client = userDao.getClient(user);
+        return createClientRegistrationResponse(client);
+    }
+
+    public ClientRegistrationResponse getBalance(String cookieValue) throws OnlineShopException {
+        User user = userDao.getActualUser(cookieValue);
+        Client client = userDao.getClient(user);
+        return createClientRegistrationResponse(client);
+    }
+
+
+    private void checkUserOldPasswordCorrectness(User user,
+                                                 AdminProfileEditingRequest request) throws OnlineShopException {
         if (!user.getPassword().equals(request.getOldPassword())) {
             throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
                     "Old password",
                     OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
         }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client newClient = createClient(request);
-        newClient.setId(user.getId());
-        userDao.editClientProfile(newClient);
-        Client client = userDao.getClient(newClient);
-        return createClientRegistrationResponse(client);
     }
 
-    public ClientRegistrationResponse depositMoney(DepositMoneyRequest request, String cookieValue) throws OnlineShopException {
+    private void checkUserOldPasswordCorrectness(User user,
+                                                 ClientProfileEditingRequest request) throws OnlineShopException {
+        if (!user.getPassword().equals(request.getOldPassword())) {
+            throw new OnlineShopException(OnlineShopErrorCode.USER_WRONG_PASSWORD,
+                    "Old password",
+                    OnlineShopErrorCode.USER_WRONG_PASSWORD.getErrorText());
+        }
+    }
+
+
+    private Integer getDepositFromRequest(DepositMoneyRequest request) throws OnlineShopException {
         Integer money;
         try {
             money = Integer.valueOf(request.getDeposit());
@@ -224,86 +213,7 @@ public class UserService {
                     "deposit",
                     OnlineShopErrorCode.DEPOSIT_INCORRECT_VALUE.getErrorText());
         }
-
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client beforeClient = userDao.getClient(user);
-        userDao.depositMoney(beforeClient.getDeposit(), money);
-        Client client = userDao.getClient(user);
-        return createClientRegistrationResponse(client);
+        return money;
     }
 
-    public ClientRegistrationResponse getBalance(String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.CLIENT.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-        Client client = userDao.getClient(user);
-        return createClientRegistrationResponse(client);
-    }
-
-
-
-
-
-
-
-
-    public void checkAdminPermission(String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.ADMIN.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_ADMIN,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_ADMIN.getErrorText());
-        }
-    }
-
-    public void checkAdminOrClientPermission(String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.ADMIN.name()) && !user.getUserType().equals(UserType.CLIENT.name()) ) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_ACCESS_PERMISSION,
-                    null,
-                    OnlineShopErrorCode.USER_ACCESS_PERMISSION.getErrorText());
-        }
-    }
-
-    public void checkClientPermission(String cookieValue) throws OnlineShopException {
-        User user = userDao.getActualUser(cookieValue);
-        if (user == null) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_OLD_SESSION,
-                    null,
-                    OnlineShopErrorCode.USER_OLD_SESSION.getErrorText());
-        }
-        if (!user.getUserType().equals(UserType.ADMIN.name())) {
-            throw new OnlineShopException(OnlineShopErrorCode.USER_NOT_CLIENT,
-                    null,
-                    OnlineShopErrorCode.USER_NOT_CLIENT.getErrorText());
-        }
-    }
 }

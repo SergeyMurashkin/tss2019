@@ -1,6 +1,5 @@
 package net.thumbtack.onlineshop.dao;
 
-import net.thumbtack.onlineshop.model.Client;
 import net.thumbtack.onlineshop.model.OnlineShopException;
 import net.thumbtack.onlineshop.model.Product;
 
@@ -8,26 +7,28 @@ import java.util.List;
 
 public interface ProductDao {
 
-    void addProduct(Product product, List<Integer> categoriesId);
+    void addProduct(Product product, List<Integer> categoriesId) throws OnlineShopException;
 
-    Product getProduct(Integer id);
+    Product getProduct(Integer id) throws OnlineShopException;
 
-    void editProduct(Product product, List<Integer> categoriesId) throws OnlineShopException;
+    void editProduct(Product product,
+                     List<Integer> categoriesId) throws OnlineShopException;
+
+    List<Product> getAllProductsByProductOrder();
+
+    List<Product> getAllProductsByCategoryOrder();
+
+    List<Product> getProductsWithoutCategories();
+
+    List<Product> getProductsByCategoryOrder(List<Integer> categoriesId);
+
+    List<Product> getProductsByProductOrder(List<Integer> categoriesId);
 
     void deleteProduct(Integer id);
 
-    List<Product> getProductsByCategory(List<Integer> categories, String order);
+    List<Integer> getAllProductsId();
 
-    boolean checkIsProductInClientBasket(Client client, Product productToBasket);
+    List<Integer> getProductsIdByCategories(List<Integer> categoriesId);
 
-    void addProductInBasket(Client client, Product productToBasket);
-
-    List<Product> getClientBasket(Client client);
-
-    Product getBasketProduct(Client client, Product product);
-
-    void deleteProductFromBasket(Client client, Integer productId);
-
-    List<Product> changeBasketProductQuantity(Client client, Product newBasketProduct);
-
+    List<Integer> getProductsIdByCategoriesAndWithout(List<Integer> categoriesId);
 }

@@ -1,69 +1,67 @@
 package net.thumbtack.onlineshop.dto.responses;
 
-import net.thumbtack.onlineshop.model.Category;
-import net.thumbtack.onlineshop.model.Purchase;
-
 import java.util.List;
 import java.util.Map;
 
 public class ConsolidatedStatementResponse {
 
-    private List<Purchase> categoriesPurchases;
-    private Map<Category, Integer> categoriesTotalPurchases;
-    private List<Purchase> productsPurchases;
-    private Map<Category, Integer> productsTotalPurchases;
-    private List<Purchase> clientsPurchases;
-    private Map<Category, Integer> clientsTotalPurchases;
+    private Map<Integer, Integer> categoriesId_totalPurchases;
+    private Map<Integer, List<PurchaseProductResponse>> categoriesId_purchases;
 
-    public ConsolidatedStatementResponse(){
+    private Map<Integer, Integer> productsId_totalPurchases;
+    private Map<Integer, List<PurchaseProductResponse>> productsId_purchases;
 
+    private Map<Integer, Integer> clientsId_totalPurchases;
+    private Map<Integer, List<PurchaseProductResponse>> clientsId_purchases;
+
+    public ConsolidatedStatementResponse() {
     }
 
-    public List<Purchase> getCategoriesPurchases() {
-        return categoriesPurchases;
+    public Map<Integer, Integer> getCategoriesId_totalPurchases() {
+        return categoriesId_totalPurchases;
     }
 
-    public void setCategoriesPurchases(List<Purchase> categoriesPurchases) {
-        this.categoriesPurchases = categoriesPurchases;
+    public void setCategoriesId_totalPurchases(Map<Integer, Integer> categoriesId_totalPurchases) {
+        this.categoriesId_totalPurchases = categoriesId_totalPurchases;
     }
 
-    public Map<Category, Integer> getCategoriesTotalPurchases() {
-        return categoriesTotalPurchases;
+    public Map<Integer, List<PurchaseProductResponse>> getCategoriesId_purchases() {
+        return categoriesId_purchases;
     }
 
-    public void setCategoriesTotalPurchases(Map<Category, Integer> categoriesTotalPurchases) {
-        this.categoriesTotalPurchases = categoriesTotalPurchases;
+    public void setCategoriesId_purchases(Map<Integer, List<PurchaseProductResponse>> categoriesId_purchases) {
+        this.categoriesId_purchases = categoriesId_purchases;
     }
 
-    public List<Purchase> getProductsPurchases() {
-        return productsPurchases;
+    public Map<Integer, Integer> getProductsId_totalPurchases() {
+        return productsId_totalPurchases;
     }
 
-    public void setProductsPurchases(List<Purchase> productsPurchases) {
-        this.productsPurchases = productsPurchases;
+    public void setProductsId_totalPurchases(Map<Integer, Integer> productsId_totalPurchases) {
+        this.productsId_totalPurchases = productsId_totalPurchases;
     }
 
-    public Map<Category, Integer> getProductsTotalPurchases() {
-        return productsTotalPurchases;
+    public Map<Integer, List<PurchaseProductResponse>> getProductsId_purchases() {
+        return productsId_purchases;
     }
 
-    public void setProductsTotalPurchases(Map<Category, Integer> productsTotalPurchases) {
-        this.productsTotalPurchases = productsTotalPurchases;
+    public void setProductsId_purchases(Map<Integer, List<PurchaseProductResponse>> productsId_purchases) {
+        this.productsId_purchases = productsId_purchases;
     }
 
-    public List<Purchase> getClientsPurchases() {
-        return clientsPurchases;
+    public Map<Integer, Integer> getClientsId_totalPurchases() {
+        return clientsId_totalPurchases;
     }
 
-    public void setClientsPurchases(List<Purchase> clientsPurchases) {
-        this.clientsPurchases = clientsPurchases;
+    public void setClientsId_totalPurchases(Map<Integer, Integer> clientsId_totalPurchases) {
+        this.clientsId_totalPurchases = clientsId_totalPurchases;
     }
 
-    public Map<Category, Integer> getClientsTotalPurchases() {
-        return clientsTotalPurchases;
+    public Map<Integer, List<PurchaseProductResponse>> getClientsId_purchases() {
+        return clientsId_purchases;
     }
 
-    public void setClientsTotalPurchases(Map<Category, Integer> clientsTotalPurchases) {
-        this.clientsTotalPurchases = clientsTotalPurchases;
+    public void setClientsId_purchases(Map<Integer, List<PurchaseProductResponse>> clientsId_purchases) {
+        this.clientsId_purchases = clientsId_purchases;
     }
 }
