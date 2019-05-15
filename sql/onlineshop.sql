@@ -1,6 +1,6 @@
 
 DROP DATABASE IF EXISTS onlineshop;
-CREATE DATABASE onlineshop;
+CREATE DATABASE onlineshop DEFAULT CHARSET utf8;
 USE onlineshop;
 
 CREATE TABLE users (
@@ -13,14 +13,14 @@ login VARCHAR(250) NOT NULL,
 password VARCHAR(250) NOT NULL,
 PRIMARY KEY (id),
 UNIQUE KEY login (login)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE admins (
 id INT NOT NULL,
 position VARCHAR(250) NOT NULL,
 foreign key (id) references users(id) ON DELETE CASCADE,
 PRIMARY KEY (id)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE clients (
 id INT NOT NULL,
@@ -29,7 +29,7 @@ address VARCHAR(250) NOT NULL,
 phone VARCHAR(250) NOT NULL,
 foreign key (id) references users(id) ON DELETE CASCADE,
 PRIMARY KEY (id)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE deposits (
 id INT NOT NULL,
@@ -37,7 +37,7 @@ deposit INT DEFAULT 0,
 version INT DEFAULT 0,
 foreign key (id) references clients(id) ON DELETE CASCADE,
 PRIMARY KEY (id)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE sessions (
 id INT NOT NULL,
@@ -45,7 +45,7 @@ cookie VARCHAR(250) DEFAULT NULL,
 foreign key (id) references users(id) ON DELETE CASCADE,
 PRIMARY KEY (id),
 UNIQUE KEY cookie (cookie)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE categories (
 id INT NOT NULL AUTO_INCREMENT,
@@ -54,7 +54,7 @@ parentId INT DEFAULT NULL,
 foreign key (parentId) references categories(id) ON DELETE CASCADE,
 PRIMARY KEY (id),
 UNIQUE KEY name (name)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 
 CREATE TABLE products (
@@ -65,7 +65,7 @@ count INT DEFAULT 0,
 version INT DEFAULT 0,
 isDeleted boolean DEFAULT false,
 PRIMARY KEY (id)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE products_categories (
 productId INT NOT NULL,
@@ -73,7 +73,7 @@ categoryId INT NOT NULL,
 foreign key (productId) references products(id) ON DELETE CASCADE,
 foreign key (categoryId) references categories(id) ON DELETE CASCADE,
 UNIQUE KEY productId_categoryId (productId, categoryId)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE purchases (
 id INT NOT NULL AUTO_INCREMENT,
@@ -83,7 +83,7 @@ name VARCHAR(250) NOT NULL,
 price INT NOT NULL,
 count INT NOT NULL,
 PRIMARY KEY (id)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE basketProducts (
 clientId INT NOT NULL,
@@ -92,4 +92,4 @@ count INT NOT NULL,
 foreign key (clientId) references clients(id) ON DELETE CASCADE,
 foreign key (productId) references products(id) ON DELETE CASCADE,
 UNIQUE KEY clientId_productId (clientId, productId)
-) ENGINE=INNODB DEFAULT CHARSET=utf8;
+);
